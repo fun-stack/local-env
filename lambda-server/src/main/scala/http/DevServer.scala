@@ -1,11 +1,10 @@
 package funstack.lambdaserver.http
 
-import funstack.lambdaserver.facades
-import facades.node.httpMod.createServer
-import facades.node.httpMod.IncomingMessage
-import facades.node.httpMod.ServerResponse
-import facades.node.httpMod.Server
-import facades.node.{Buffer => JsBuffer}
+import typings.node.httpMod.createServer
+import typings.node.httpMod.IncomingMessage
+import typings.node.httpMod.ServerResponse
+import typings.node.httpMod.Server
+import typings.node.{Buffer => JsBuffer}
 import net.exoego.facade.aws_lambda.{APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2}
 import net.exoego.facade.aws_lambda
 import scala.scalajs.js

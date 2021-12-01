@@ -34,7 +34,7 @@ lazy val commonSettings = Seq(
   libraryDependencies ++=
     Deps.scalatest.value % Test ::
       Nil,
-  scalacOptions --= Seq("-Xfatal-warnings", "-Wconf:any&src=src_managed/.*:i"),
+  scalacOptions --= Seq("-Xfatal-warnings"),
 )
 
 lazy val jsSettings = Seq(
@@ -49,34 +49,17 @@ lazy val jsSettings = Seq(
 )
 
 lazy val lambdaServer = project.in(file("lambda-server"))
-  .enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin, ScalablyTypedConverterGenSourcePlugin)
+  .enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin, ScalablyTypedConverterPlugin)
   .settings(commonSettings, jsSettings)
   .settings(
-    scalaJSUseMainModuleInitializer := true,
-    stOutputPackage := "funstack.lambdaserver.facades",
-    stUseScalaJsDom := true,
-    /* say we want to minimize all */
-    stMinimize := Selection.All,
-    /* but keep these very specific things*/
-    stMinimizeKeep ++= List(
-      "node.httpMod.^",
-      "node.httpMod.createServer",
-      "node.httpMod.IncomingMessage",
-      "node.httpMod.ServerResponse",
-      "ws.mod.WebSocketServer",
-      "ws.mod.ServerOptions",
-      "ws.wsStrings",
-      "jwtDecode.mod.^",
-      "jwtDecode.mod.default",
-      "jwtDecode.mod.JwtPayload",
-    ),
     name := "lambda-server",
+
+    scalaJSUseMainModuleInitializer := true,
+    webpackConfigFile := Some(baseDirectory.value / "webpack.config.js"),
+
     libraryDependencies ++=
       Deps.cats.effect.value ::
-        Deps.awsSdkJS.lambda.value ::
         Deps.awsLambdaJS.value ::
-        /* Deps.sttp.openApi.value :: */
-        /* Deps.sttp.circeOpenApi.value :: */
         Nil,
 
     Compile / npmDependencies ++= Seq(

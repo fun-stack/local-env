@@ -2,12 +2,11 @@ package funstack.lambdaserver.ws
 
 import net.exoego.facade.aws_lambda.APIGatewayProxyStructuredResultV2
 import net.exoego.facade.aws_lambda
-import funstack.lambdaserver.facades
-import facades.ws.mod.WebSocketServer
-import facades.ws.mod.ServerOptions
-import facades.ws.wsStrings
-import facades.jwtDecode.mod.{default => jwt_decode}
-import facades.jwtDecode.mod.JwtPayload
+import typings.ws.mod.WebSocketServer
+import typings.ws.mod.ServerOptions
+import typings.ws.wsStrings
+import typings.jwtDecode.mod.{default => jwt_decode}
+import typings.jwtDecode.mod.JwtPayload
 import scala.scalajs.js
 import scala.util.{Success, Failure}
 

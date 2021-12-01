@@ -3,6 +3,8 @@ package funstack.lambdaserver
 import scala.scalajs.js
 import cats.implicits._
 
+import typings.node.fsMod
+
 sealed trait Mode
 object Mode {
   case object Http extends Mode
@@ -27,11 +29,32 @@ object Main {
   def main(_args: Array[String]): Unit = {
     //TODO process facade? or how to get args correctly?
     val args = js.Dynamic.global.process.argv.asInstanceOf[js.Array[String]].toList.tail.tail // ignore node and filename arg
-    val result = parse(args).flatMap(start)
 
-    result match {
-      case Right(()) =>
-        println("Done")
+    parse(args) match {
+      case Right(config) =>
+        println(s"Config: $config")
+
+        var cancel = () => ()
+
+        def run(): Unit = {
+          cancel()
+          cancel = start(config) match {
+            case Right(newCancel) =>
+              println("Server started")
+              newCancel
+            case Left(error) =>
+              println(s"Error starting server: $error")
+              () => ()
+          }
+        }
+
+        run()
+
+        val _ = fsMod.watch(config.jsFileName, { (_,_) =>
+          println("File changed, restarting...")
+          run()
+        })
+
       case Left(error)   =>
         println(s"Error parsing arguments: $error")
     }
@@ -43,23 +66,22 @@ object Main {
     case other                                         => Left(s"Invalid arguments, expected '<http|ws> <js-file-name> <export> [<port>]', got: ${other.mkString(", ")}")
   }
 
-  def start(config: Config): Either[String, Unit] = {
-    println(s"Starting: $config")
-
+  def start(config: Config): Either[String, () => Unit] = {
     for {
-      //TODO require facade?
-      requiredJs      <- Either.catchNonFatal(js.Dynamic.global.require(config.jsFileName)).left.map(e => s"Cannot require js file: $e")
+      requiredJs      <- Either.catchNonFatal(js.Dynamic.global.__non_webpack_require__(config.jsFileName)).left.map(e => s"Cannot require js file: $e")
       exportedHandler <- Either.catchNonFatal(requiredJs.selectDynamic(config.exportName)).left.map(e => s"Cannot access export: $e ${js.JSON.stringify(requiredJs)}")
-      _               <- config.mode match {
+      cancel          <- config.mode match {
         case Mode.Http =>
           Either.catchNonFatal(exportedHandler.asInstanceOf[http.DevServer.FunctionType])
             .left.map(e => s"Exported Http handler is of unexpected type: $e")
             .map(http.DevServer.start(_, port = config.port.getOrElse(8080)))
+            .map(server => () => server.close())
         case Mode.Ws   =>
           Either.catchNonFatal(exportedHandler.asInstanceOf[ws.DevServer.FunctionType])
             .left.map(e => s"Exported Ws handler is of unexpected type: $e")
             .map(ws.DevServer.start(_, port = config.port.getOrElse(8081)))
+            .map(server => () => server.close())
       }
-    } yield ()
+    } yield { () => val _ = cancel() }
   }
 }
