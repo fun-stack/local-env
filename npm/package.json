@@ -1,0 +1,16 @@
+{
+  "name": "aws-lambda-server",
+  "version": "0.1.0",
+  "description": "Run AWS lambdas locally with a HTTP/WS Server",
+  "main": "./bin/lambda-server.js",
+  "bin": {
+    "lambda-server": "./bin/lambda-server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fun-stack/lambda-server.git"
+  },
+  "author": "cornerman",
+  "license": "MIT",
+  "homepage": "https://github.com/fun-stack/lambda-server"
+}
