@@ -58,7 +58,7 @@ object DevServer {
 
   def transform(baseUrl: String, req: IncomingMessage, body: String): (APIGatewayProxyEventV2, aws_lambda.Context) = {
 
-    val url = new URI(s"$baseUrl/${req.url.getOrElse("")}")
+    val url = new URI(s"$baseUrl${req.url.getOrElse("")}")
     val queryParameters = Option(url.getQuery)
       .fold(Map.empty[String, String])(
         _.split("&|=")
