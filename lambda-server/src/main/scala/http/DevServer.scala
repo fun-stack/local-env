@@ -13,17 +13,17 @@ import java.net.URI
 import js.JSConverters._
 
 object DevServer {
-  type FunctionType = js.Function2[APIGatewayProxyEventV2, aws_lambda.Context, js.Promise[APIGatewayProxyStructuredResultV2]]
+  type FunctionType =
+    js.Function2[APIGatewayProxyEventV2, aws_lambda.Context, js.Promise[APIGatewayProxyStructuredResultV2]]
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def start(lambdaHandler: FunctionType, port: Int):Server = {
+  def start(lambdaHandler: FunctionType, port: Int): Server = {
     val requestListener = { (req: IncomingMessage, res: ServerResponse) =>
-
       val body = new StringBuilder()
       req.on(
         "data",
-        (chunk) => {
+        chunk => {
           val buffer = chunk.asInstanceOf[JsBuffer];
           body ++= buffer.toString()
           ()
@@ -31,7 +31,7 @@ object DevServer {
       )
       req.on(
         "end",
-        (_) => {
+        _ => {
           val bodyStr                       = body.result()
           val (gatewayEvent, lambdaContext) = transform(s"http://localhost:$port", req, bodyStr)
 
@@ -40,7 +40,7 @@ object DevServer {
             case Success(result) =>
               result.statusCode.foreach(res.statusCode = _)
               res.end(result.body)
-            case Failure(error)  =>
+            case Failure(error) =>
               res.statusCode = 500 // internal server error
               error.printStackTrace()
               res.end()
@@ -56,14 +56,9 @@ object DevServer {
     server
   }
 
-
-
-
-
-
   def transform(baseUrl: String, req: IncomingMessage, body: String): (APIGatewayProxyEventV2, aws_lambda.Context) = {
 
-    val url             = new URI(s"$baseUrl/${req.url.getOrElse("")}")
+    val url = new URI(s"$baseUrl/${req.url.getOrElse("")}")
     val queryParameters = Option(url.getQuery)
       .fold(Map.empty[String, String])(
         _.split("&|=")
@@ -75,13 +70,13 @@ object DevServer {
     // https://docs.aws.amazon.com/lambda/latest/dg/services-apigateway.html#apigateway-example-event
     // example json: https://github.com/awsdocs/aws-lambda-developer-guide/blob/main/sample-apps/nodejs-apig/event-v2.json
     // more examples: https://github.com/search?l=JSON&q=pathparameters+requestContext+isbase64encoded&type=Code
-    val routeKey        = "ANY /nodejs-apig-function-1G3XMPLZXVXYI"
-    val now             = new js.Date()
-    val host            = Option(url.getHost()).getOrElse("") // TODO: includes port number, but it shouldn't?
-    val path            = s"/latest${url.getPath()}"          //TODO: why latest?
+    val routeKey = "ANY /nodejs-apig-function-1G3XMPLZXVXYI"
+    val now      = new js.Date()
+    val host     = Option(url.getHost()).getOrElse("") // TODO: includes port number, but it shouldn't?
+    val path     = s"/latest${url.getPath()}"          //TODO: why latest?
 
     val randomRequestId = util.Random.alphanumeric.take(20).mkString
-    val gateWayEvent    = APIGatewayProxyEventV2(
+    val gateWayEvent = APIGatewayProxyEventV2(
       version = "2.0",
       routeKey = routeKey,
       rawPath = path,
@@ -93,7 +88,7 @@ object DevServer {
       requestContext = APIGatewayProxyEventV2.RequestContext(
         accountId = "123456789012",
         apiId = "r3pmxmplak",
-        authorizer = js.undefined,      // TODO: extract from accesstoken like in ws
+        authorizer = js.undefined, // TODO: extract from accesstoken like in ws
         domainName = host,
         domainPrefix = host.split(".").headOption.getOrElse(url.getHost()),
         http = APIGatewayProxyEventV2.RequestContext.Http(
@@ -102,18 +97,17 @@ object DevServer {
           protocol = "HTTP/1.1",
           sourceIp = "127.0.0.1",
           userAgent = req.headers.`user-agent`.getOrElse(""),
-        ),                              // RequestContext.Http
+        ), // RequestContext.Http
         requestId = randomRequestId,
         routeKey = routeKey,
         stage = "$default",
-        time =
-          now.toISOString(),            //TODO: ISO 8601 maybe not correct. Examples have "21/Nov/2020:20:39:08 +0000" which is a different format,
+        time = now.toISOString(), //TODO: ISO 8601 maybe not correct. Examples have "21/Nov/2020:20:39:08 +0000" which is a different format,
         timeEpoch = now.getUTCMilliseconds(),
       ),
       isBase64Encoded = false,
       body = body,
-      pathParameters = js.undefined, // TODO: js.Dictionary for /{id}/ in URL
-      queryStringParameters = queryParameters.toJSDictionary, //js.Dictionary[String](),
+      pathParameters = js.undefined,                         // TODO: js.Dictionary for /{id}/ in URL
+      queryStringParameters = queryParameters.toJSDictionary,//js.Dictionary[String](),
     )
 
     val lambdaContext = js.Dynamic
@@ -134,4 +128,3 @@ object DevServer {
     (gateWayEvent, lambdaContext)
   }
 }
-
