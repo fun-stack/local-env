@@ -43,8 +43,6 @@ object DevServer {
 
   def transform(body: String, accessToken: String): (APIGatewayWSEvent, aws_lambda.Context) = {
 
-    val decodedToken = jwt_decode[JwtPayload](accessToken)
-
     val authorizer =
       if (accessToken == "anon")
         js.Dynamic.literal(
@@ -57,7 +55,7 @@ object DevServer {
               principalId = "user",
             )
             .asInstanceOf[js.Object],
-          decodedToken,
+          jwt_decode[JwtPayload](accessToken),
         )
       }
 
