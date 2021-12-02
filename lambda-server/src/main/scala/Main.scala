@@ -4,6 +4,7 @@ import scala.scalajs.js
 import cats.implicits._
 
 import typings.node.fsMod
+import typings.node.pathMod
 
 sealed trait Mode
 object Mode {
@@ -18,6 +19,7 @@ object Mode {
 
 case class Config(mode: Mode, jsFileName: String, exportName: String, port: Option[Int])
 object Config {
+
   def parse(modeString: String, jsFileName: String, exportName: String, portString: Option[String]): Either[String, Config] =
     for {
       port <- portString.traverse(str => str.toIntOption.toRight(s"Unexpected port number: $str"))
@@ -68,7 +70,7 @@ object Main {
 
   def start(config: Config): Either[String, () => Unit] = {
     for {
-      requiredJs      <- Either.catchNonFatal(js.Dynamic.global.__non_webpack_require__(config.jsFileName)).left.map(e => s"Cannot require js file: $e")
+      requiredJs      <- Either.catchNonFatal(js.Dynamic.global.__non_webpack_require__(pathMod.resolve(config.jsFileName))).left.map(e => s"Cannot require js file: $e")
       exportedHandler <- Either.catchNonFatal(requiredJs.selectDynamic(config.exportName)).left.map(e => s"Cannot access export: $e ${js.JSON.stringify(requiredJs)}")
       cancel          <- config.mode match {
         case Mode.Http =>
