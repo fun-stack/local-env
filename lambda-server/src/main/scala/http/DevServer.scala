@@ -21,6 +21,12 @@ object DevServer {
   def start(lambdaHandler: FunctionType, port: Int): Server = {
     val requestListener = { (req: IncomingMessage, res: ServerResponse) =>
       val body = new StringBuilder()
+
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Request-Method", "*");
+      res.setHeader("Access-Control-Allow-Methods", "OPTIONS, GET, PUT, POST, DELETE, HEAD, TRACE, CONNECT");
+      res.setHeader("Access-Control-Allow-Headers", "*");
+
       req.on(
         "data",
         chunk => {
