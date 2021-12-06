@@ -79,11 +79,19 @@ object Main {
       Left(s"Invalid arguments, expected '<http|ws> <js-file-name> <export> [<port>]', got: ${other.mkString(", ")}")
   }
 
+  def requireUncached(module: String): js.Dynamic = {
+    import js.Dynamic.{global => g}
+    val requireCache = g.__non_webpack_require__.cache.asInstanceOf[js.Dictionary[js.Any]]
+    val moduleKey = g.__non_webpack_require__.resolve(module).asInstanceOf[String]
+    requireCache.remove(moduleKey)
+    g.__non_webpack_require__(module)
+  }
+
   def start(config: Config): Either[String, () => Unit] =
     for {
       requiredJs <-
         Either
-          .catchNonFatal(js.Dynamic.global.__non_webpack_require__(pathMod.resolve(config.jsFileName)))
+          .catchNonFatal(requireUncached(pathMod.resolve(config.jsFileName)))
           .left
           .map(e => s"Cannot require js file: $e")
       exportedHandler <-
