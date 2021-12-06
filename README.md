@@ -6,7 +6,7 @@ Run AWS lambdas locally with a HTTP/WS Server
 ## Install
 
 ```sh
-npm install fun-lambda-server
+npm install --global @fun-stack/lambda-server
 ```
 
 ## Usage
