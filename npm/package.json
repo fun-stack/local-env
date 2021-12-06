@@ -1,6 +1,6 @@
 {
   "name": "fun-lambda-server",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Run AWS lambdas locally with a HTTP/WS Server",
   "main": "./bin/lambda-server.js",
   "bin": {
