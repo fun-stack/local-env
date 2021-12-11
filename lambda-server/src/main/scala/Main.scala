@@ -40,8 +40,6 @@ object Main {
 
     parse(args) match {
       case Right(config) =>
-        println(s"Config: $config")
-
         var cancel = () => ()
 
         def run(): Unit = {
