@@ -7,7 +7,7 @@ object Deps {
   val scalatest = s("org.scalatest" %%% "scalatest" % "3.2.10")
 
   val cats = new {
-    val effect = s("org.typelevel" %%% "cats-effect" % "2.5.4")
+    val effect = s("org.typelevel" %%% "cats-effect" % "3.3.0")
   }
 
   val awsLambdaJS = s("net.exoego" %%% "aws-lambda-scalajs-facade" % "0.11.0")
