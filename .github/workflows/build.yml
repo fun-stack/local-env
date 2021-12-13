@@ -35,10 +35,10 @@ jobs:
           key: ${{ runner.os }}-scala-target-${{ github.sha }}
 
       - run: ./publish.sh
-      - run: cd npm/
 
       - uses: JS-DevTools/npm-publish@v1
         with:
+          package: ./npm/package.json
           token: ${{ secrets.NPM_TOKEN }}
 
       # - name: Debug over SSH (tmate)
