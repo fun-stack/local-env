@@ -33,9 +33,13 @@ jobs:
           path: "**/target"
           key: ${{ runner.os }}-scala-target-${{ github.sha }}
 
-      - run: ./publish.sh
+      - run: sbt test
 
-      - uses: JS-DevTools/npm-publish@v1
+      - if: github.event_name != 'pull_request'
+        run: ./publish.sh
+
+      - if: github.event_name != 'pull_request'
+        uses: JS-DevTools/npm-publish@v1
         with:
           package: ./npm/package.json
           token: ${{ secrets.NPM_TOKEN }}
