@@ -46,7 +46,7 @@ object DevServer {
             case Success(result) =>
               result.statusCode.foreach(res.statusCode = _)
               res.end(result.body)
-            case Failure(error) =>
+            case Failure(error)  =>
               res.statusCode = 500 // internal server error
               error.printStackTrace()
               res.end()
@@ -64,7 +64,7 @@ object DevServer {
 
   def transform(baseUrl: String, req: IncomingMessage, body: String): (APIGatewayProxyEventV2, aws_lambda.Context) = {
 
-    val url = new URI(s"$baseUrl${req.url.getOrElse("")}")
+    val url             = new URI(s"$baseUrl${req.url.getOrElse("")}")
     val queryParameters = Option(url.getQuery)
       .fold(Map.empty[String, String])(
         _.split("&|=")
@@ -79,10 +79,10 @@ object DevServer {
     val routeKey = "ANY /nodejs-apig-function-1G3XMPLZXVXYI"
     val now      = new js.Date()
     val host     = Option(url.getHost()).getOrElse("") // TODO: includes port number, but it shouldn't?
-    val path     = s"/latest${url.getPath()}"          //TODO: why latest?
+    val path     = s"/latest${url.getPath()}"          // TODO: why latest?
 
     val randomRequestId = util.Random.alphanumeric.take(20).mkString
-    val gateWayEvent = APIGatewayProxyEventV2(
+    val gateWayEvent    = APIGatewayProxyEventV2(
       version = "2.0",
       routeKey = routeKey,
       rawPath = path,
@@ -103,17 +103,17 @@ object DevServer {
           protocol = "HTTP/1.1",
           sourceIp = "127.0.0.1",
           userAgent = req.headers.`user-agent`.getOrElse(""),
-        ), // RequestContext.Http
+        ),                         // RequestContext.Http
         requestId = randomRequestId,
         routeKey = routeKey,
         stage = "$default",
-        time = now.toISOString(), //TODO: ISO 8601 maybe not correct. Examples have "21/Nov/2020:20:39:08 +0000" which is a different format,
+        time = now.toISOString(),  // TODO: ISO 8601 maybe not correct. Examples have "21/Nov/2020:20:39:08 +0000" which is a different format,
         timeEpoch = now.getUTCMilliseconds(),
       ),
       isBase64Encoded = false,
       body = body,
       pathParameters = js.undefined,                         // TODO: js.Dictionary for /{id}/ in URL
-      queryStringParameters = queryParameters.toJSDictionary,//js.Dictionary[String](),
+      queryStringParameters = queryParameters.toJSDictionary,// js.Dictionary[String](),
     )
 
     val lambdaContext = js.Dynamic

@@ -4,18 +4,18 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 inThisBuild(
   Seq(
-    organization := "io.github.fun-stack",
-    scalaVersion := "2.13.7",
-    licenses     := Seq("MIT License" -> url("https://opensource.org/licenses/MIT")),
-    homepage     := Some(url("https://github.com/fun-stack/lambda-server")),
-    scmInfo := Some(
+    organization           := "io.github.fun-stack",
+    scalaVersion           := "2.13.7",
+    licenses               := Seq("MIT License" -> url("https://opensource.org/licenses/MIT")),
+    homepage               := Some(url("https://github.com/fun-stack/lambda-server")),
+    scmInfo                := Some(
       ScmInfo(
         url("https://github.com/fun-stack/lambda-server"),
         "scm:git:git@github.com:fun-stack/lambda-server.git",
         Some("scm:git:git@github.com:fun-stack/lambda-server.git"),
       ),
     ),
-    pomExtra :=
+    pomExtra               :=
       <developers>
       <developer>
         <id>jkaroff</id>
@@ -30,14 +30,14 @@ inThisBuild(
 
 lazy val commonSettings = Seq(
   addCompilerPlugin("org.typelevel" % "kind-projector" % "0.13.2" cross CrossVersion.full),
-  libraryDependencies ++=
+  libraryDependencies  ++=
     Deps.scalatest.value % Test ::
       Nil,
   scalacOptions --= Seq("-Xfatal-warnings"),
 )
 
 lazy val jsSettings = Seq(
-  useYarn := true,
+  useYarn       := true,
   scalacOptions += {
     val githubRepo    = "fun-stack/lambda-server"
     val local         = baseDirectory.value.toURI
@@ -55,11 +55,11 @@ lazy val lambdaServer = project
     name                            := "lambda-server",
     scalaJSUseMainModuleInitializer := true,
     webpackConfigFile               := Some(baseDirectory.value / "webpack.config.js"),
-    libraryDependencies ++=
+    libraryDependencies            ++=
       Deps.cats.effect.value ::
         Deps.awsLambdaJS.value ::
         Nil,
-    Compile / npmDependencies ++= Seq(
+    Compile / npmDependencies      ++= Seq(
       "@types/node" -> "14.14.31",
       "ws"          -> "8.2.3",
       "@types/ws"   -> "8.2.0",

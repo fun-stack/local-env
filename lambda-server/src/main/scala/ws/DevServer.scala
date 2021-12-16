@@ -30,7 +30,7 @@ object DevServer {
             lambdaHandler(event, context).toFuture.onComplete {
               case Success(result) =>
                 ws.send(result.body)
-              case Failure(error) =>
+              case Failure(error)  =>
                 error.printStackTrace()
             }
           },
@@ -71,7 +71,7 @@ object DevServer {
           messageId = randomMessageId,
           eventType = "MESSAGE",
           extendedRequestId = randomRequestId,
-          requestTime = now.toISOString(), //TODO: ISO 8601 maybe not correct. Examples have "21/Nov/2020:20:39:08 +0000" which is a different format,
+          requestTime = now.toISOString(),   // TODO: ISO 8601 maybe not correct. Examples have "21/Nov/2020:20:39:08 +0000" which is a different format,
           messageDirection = "IN",
           stage = "latest",
           connectedAt = now.getUTCMilliseconds(),
@@ -82,7 +82,7 @@ object DevServer {
           ),
           requestId = randomRequestId,
           domainName = "localhost",
-          connectionId = "I6BtqeyAliACH_Q=", //TODO: random per connection
+          connectionId = "I6BtqeyAliACH_Q=", // TODO: random per connection
           apiId = "jck5a4ero8",
         ),
         body = body,

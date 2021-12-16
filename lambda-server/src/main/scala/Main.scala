@@ -34,7 +34,7 @@ object Config {
 
 object Main {
   def main(_args: Array[String]): Unit = {
-    //TODO process facade? or how to get args correctly?
+    // TODO process facade? or how to get args correctly?
     val args =
       js.Dynamic.global.process.argv.asInstanceOf[js.Array[String]].toList.tail.tail // ignore node and filename arg
 
@@ -48,7 +48,7 @@ object Main {
             case Right(newCancel) =>
               println("Server started")
               newCancel
-            case Left(error) =>
+            case Left(error)      =>
               println(s"Error starting server: $error")
               () => ()
           }
@@ -72,22 +72,22 @@ object Main {
   def parse(args: List[String]): Either[String, Config] = args match {
     case List(modeString, jsFileName, exportName, portString) =>
       Config.parse(modeString, jsFileName, exportName, Some(portString))
-    case List(modeString, jsFileName, exportName) => Config.parse(modeString, jsFileName, exportName, None)
-    case other =>
+    case List(modeString, jsFileName, exportName)             => Config.parse(modeString, jsFileName, exportName, None)
+    case other                                                =>
       Left(s"Invalid arguments, expected '<http|ws> <js-file-name> <export> [<port>]', got: ${other.mkString(", ")}")
   }
 
   def requireUncached(module: String): js.Dynamic = {
     import js.Dynamic.{global => g}
     val requireCache = g.__non_webpack_require__.cache.asInstanceOf[js.Dictionary[js.Any]]
-    val moduleKey = g.__non_webpack_require__.resolve(module).asInstanceOf[String]
+    val moduleKey    = g.__non_webpack_require__.resolve(module).asInstanceOf[String]
     requireCache.remove(moduleKey)
     g.__non_webpack_require__(module)
   }
 
   def start(config: Config): Either[String, () => Unit] =
     for {
-      requiredJs <-
+      requiredJs      <-
         Either
           .catchNonFatal(requireUncached(pathMod.resolve(config.jsFileName)))
           .left
@@ -97,22 +97,22 @@ object Main {
           .catchNonFatal(requiredJs.selectDynamic(config.exportName))
           .left
           .map(e => s"Cannot access export: $e ${js.JSON.stringify(requiredJs)}")
-      cancel <- config.mode match {
-                  case Mode.Http =>
-                    Either
-                      .catchNonFatal(exportedHandler.asInstanceOf[http.DevServer.FunctionType])
-                      .left
-                      .map(e => s"Exported Http handler is of unexpected type: $e")
-                      .map(http.DevServer.start(_, port = config.port.getOrElse(8080)))
-                      .map(server => () => server.close())
-                  case Mode.Ws =>
-                    Either
-                      .catchNonFatal(exportedHandler.asInstanceOf[ws.DevServer.FunctionType])
-                      .left
-                      .map(e => s"Exported Ws handler is of unexpected type: $e")
-                      .map(ws.DevServer.start(_, port = config.port.getOrElse(8081)))
-                      .map(server => () => server.close())
-                }
+      cancel          <- config.mode match {
+                           case Mode.Http =>
+                             Either
+                               .catchNonFatal(exportedHandler.asInstanceOf[http.DevServer.FunctionType])
+                               .left
+                               .map(e => s"Exported Http handler is of unexpected type: $e")
+                               .map(http.DevServer.start(_, port = config.port.getOrElse(8080)))
+                               .map(server => () => server.close())
+                           case Mode.Ws   =>
+                             Either
+                               .catchNonFatal(exportedHandler.asInstanceOf[ws.DevServer.FunctionType])
+                               .left
+                               .map(e => s"Exported Ws handler is of unexpected type: $e")
+                               .map(ws.DevServer.start(_, port = config.port.getOrElse(8081)))
+                               .map(server => () => server.close())
+                         }
     } yield { () =>
       val _ = cancel()
     }
