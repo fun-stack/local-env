@@ -6,6 +6,8 @@ import cats.implicits._
 import typings.node.fsMod
 import typings.node.pathMod
 
+import scala.scalajs.js.timers
+
 sealed trait Mode
 object Mode {
   case object Http extends Mode
@@ -42,6 +44,9 @@ object Main {
       case Right(config) =>
         var cancel = () => ()
 
+        var watcher: Option[fsMod.FSWatcher]             = None
+        var lastTimeout: Option[timers.SetTimeoutHandle] = None
+
         def run(): Unit = {
           cancel()
           cancel = start(config) match {
@@ -54,15 +59,31 @@ object Main {
           }
         }
 
-        run()
+        def watch(): Unit = {
+          lastTimeout = None
+          val w = fsMod.watch(
+            config.jsFileName,
+            { (_, _) =>
+              println("File changed, restarting...")
+              run()
+            },
+          )
 
-        val _ = fsMod.watch(
-          config.jsFileName,
-          { (_, _) =>
-            println("File changed, restarting...")
-            run()
-          },
-        )
+          watcher = Some(w)
+
+          w.on(
+            "error",
+            { _ =>
+              watcher.foreach(_.close())
+              watcher = None
+              lastTimeout.foreach(timers.clearTimeout)
+              lastTimeout = Some(timers.setTimeout(500)(watch()))
+            },
+          )
+        }
+
+        run()
+        watch()
 
       case Left(error) =>
         println(s"Error parsing arguments: $error")
