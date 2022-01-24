@@ -114,26 +114,21 @@ object Main {
           .left
           .map(e => s"Cannot require js file: $e")
       exportedHandler <-
-        Either
-          .catchNonFatal(requiredJs.selectDynamic(config.exportName))
-          .left
-          .map(e => s"Cannot access export: $e ${js.JSON.stringify(requiredJs)}")
-      cancel          <- config.mode match {
-                           case Mode.Http =>
-                             Either
-                               .catchNonFatal(exportedHandler.asInstanceOf[http.DevServer.FunctionType])
-                               .left
-                               .map(e => s"Exported Http handler is of unexpected type: $e")
-                               .map(http.DevServer.start(_, port = config.port.getOrElse(8080)))
-                               .map(server => () => server.close())
-                           case Mode.Ws   =>
-                             Either
-                               .catchNonFatal(exportedHandler.asInstanceOf[ws.DevServer.FunctionType])
-                               .left
-                               .map(e => s"Exported Ws handler is of unexpected type: $e")
-                               .map(ws.DevServer.start(_, port = config.port.getOrElse(8081)))
-                               .map(server => () => server.close())
-                         }
+        requiredJs
+          .selectDynamic(config.exportName)
+          .asInstanceOf[js.UndefOr[js.Any]]
+          .toRight(s"Cannot access export '${config.exportName}'")
+
+      cancel = config.mode match {
+                 case Mode.Http =>
+                   val function = exportedHandler.asInstanceOf[http.DevServer.FunctionType]
+                   val server   = http.DevServer.start(function, port = config.port.getOrElse(8080))
+                   () => server.close()
+                 case Mode.Ws   =>
+                   val function = exportedHandler.asInstanceOf[ws.DevServer.FunctionType]
+                   val server   = ws.DevServer.start(function, port = config.port.getOrElse(8081))
+                   () => server.close()
+               }
     } yield { () =>
       val _ = cancel()
     }
