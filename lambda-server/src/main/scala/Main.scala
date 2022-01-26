@@ -2,7 +2,6 @@ package funstack.lambdaserver
 
 import scala.scalajs.js
 import cats.implicits._
-
 import typings.node.fsMod
 import typings.node.pathMod
 
@@ -38,7 +37,7 @@ object Main {
   def main(_args: Array[String]): Unit = {
     // TODO process facade? or how to get args correctly?
     val args =
-      js.Dynamic.global.process.argv.asInstanceOf[js.Array[String]].toList.tail.tail // ignore node and filename arg
+      js.Dynamic.global.process.argv.asInstanceOf[js.Array[String]].toList.drop(2) // ignore node and filename arg
 
     parse(args) match {
       case Right(config) =>
@@ -60,12 +59,18 @@ object Main {
         }
 
         def watch(): Unit = {
+          lastTimeout.foreach(timers.clearTimeout)
           lastTimeout = None
-          val w = fsMod.watch(
-            config.jsFileName,
-            { (_, _) =>
+
+          watcher.foreach(_.close())
+          watcher = None
+
+          val w: fsMod.FSWatcher = fsMod.watch(
+            filename = config.jsFileName,
+            listener = { (_, _) =>
               println("File changed, restarting...")
               run()
+              watch() // since the file might have been deleted, reinitialize the watcher
             },
           )
 
@@ -73,9 +78,8 @@ object Main {
 
           w.on(
             "error",
-            { _ =>
-              watcher.foreach(_.close())
-              watcher = None
+            { err =>
+              println(s"File watching error: $err")
               lastTimeout.foreach(timers.clearTimeout)
               lastTimeout = Some(timers.setTimeout(500)(watch()))
             },
