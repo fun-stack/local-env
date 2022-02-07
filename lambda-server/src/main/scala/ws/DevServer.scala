@@ -8,7 +8,36 @@ import typings.ws.wsStrings
 import typings.jwtDecode.mod.{default => jwt_decode}
 import typings.jwtDecode.mod.JwtPayload
 import scala.scalajs.js
+import scala.scalajs.js.annotation.JSExport
 import scala.util.{Failure, Success}
+import cats.implicits._
+
+private[lambdaserver] object WebsocketConnections {
+  import scala.collection.mutable
+
+  private val connections   = mutable.HashMap[String, String => Unit]()              // connectionId -> send-method
+  private val subscriptions = mutable.HashMap[String, mutable.ArrayBuffer[String]]() // subscriptionKey -> [connectionId]
+
+  def connect(connectionId: String, send: String => Unit): Unit =
+    connections(connectionId) = send
+
+  def disconnect(connectionId: String): Unit =
+    connections -= connectionId
+
+  def subscribe(connectionId: String, subscriptionKey: String): Unit = {
+    val buf = subscriptions.getOrElseUpdate(subscriptionKey, new mutable.ArrayBuffer())
+    buf += connectionId
+  }
+
+  def unsubscribe(connectionId: String, subscriptionKey: String): Unit =
+    subscriptions.get(subscriptionKey).foreach { buf =>
+      buf -= connectionId
+    }
+
+  def send(subscriptionKey: String, body: String): Unit = subscriptions.get(subscriptionKey).foreach { buf =>
+    buf.foreach(connectionId => connections.get(connectionId).foreach(_(body)))
+  }
+}
 
 object DevServer {
   type FunctionType = js.Function2[APIGatewayWSEvent, aws_lambda.Context, js.Promise[APIGatewayProxyStructuredResultV2]]
@@ -20,18 +49,41 @@ object DevServer {
     wss.on_connection(
       wsStrings.connection,
       { (_, ws, msg) =>
-        println("new connection")
-        val token = msg.url.get.split("=")(1)
+        println("WS> new connection")
+
+        val token = {
+          val queryParam = msg.url.get.split("=") // TODO
+          if (queryParam.size > 1) queryParam(1) else ""
+        }
+
+        val connectionId = util.Random.alphanumeric.take(20).mkString
+        WebsocketConnections.connect(connectionId, ws.send(_))
+
+        ws.on_close(
+          wsStrings.close,
+          (ws, code, reason) => WebsocketConnections.disconnect(connectionId),
+        )
+
         ws.on_message(
           wsStrings.message,
           { (_, data, _) =>
-            val body             = data.toString
-            val (event, context) = transform(body, token)
-            lambdaHandler(event, context).toFuture.onComplete {
-              case Success(result) =>
-                ws.send(result.body)
-              case Failure(error)  =>
-                error.printStackTrace()
+            val body = data.toString
+            // check if internal message
+            val json = Either.catchNonFatal(js.JSON.parse(body)).toOption
+            json.flatMap(_.__action.asInstanceOf[js.UndefOr[String]].toOption) match {
+              // subscription handling
+              case Some("subscribe")   => WebsocketConnections.subscribe(connectionId, json.get.subscription_key.asInstanceOf[String])
+              case Some("unsubscribe") => WebsocketConnections.unsubscribe(connectionId, json.get.subscription_key.asInstanceOf[String])
+              case _                   =>
+                // call lambda
+                val (event, context) = transform(body, token, connectionId)
+                lambdaHandler(event, context).toFuture.onComplete {
+                  case Success(result) =>
+                    ws.send(result.body)
+                  case Failure(error)  =>
+                    print("WS> ")
+                    error.printStackTrace()
+                }
             }
           },
         )
@@ -41,12 +93,12 @@ object DevServer {
     wss
   }
 
-  def transform(body: String, accessToken: String): (APIGatewayWSEvent, aws_lambda.Context) = {
+  def transform(body: String, accessToken: String, connectionId: String): (APIGatewayWSEvent, aws_lambda.Context) = {
 
     val authorizer =
-      if (accessToken == "anon")
+      if (accessToken == "")
         js.Dynamic.literal(
-          principalId = "user",
+          principalId = "anon",
         )
       else {
         js.Object.assign(
@@ -71,7 +123,7 @@ object DevServer {
           messageId = randomMessageId,
           eventType = "MESSAGE",
           extendedRequestId = randomRequestId,
-          requestTime = now.toISOString(),   // TODO: ISO 8601 maybe not correct. Examples have "21/Nov/2020:20:39:08 +0000" which is a different format,
+          requestTime = now.toISOString(), // TODO: ISO 8601 maybe not correct. Examples have "21/Nov/2020:20:39:08 +0000" which is a different format,
           messageDirection = "IN",
           stage = "latest",
           connectedAt = now.getUTCMilliseconds(),
@@ -82,7 +134,7 @@ object DevServer {
           ),
           requestId = randomRequestId,
           domainName = "localhost",
-          connectionId = "I6BtqeyAliACH_Q=", // TODO: random per connection
+          connectionId = connectionId,
           apiId = "jck5a4ero8",
         ),
         body = body,

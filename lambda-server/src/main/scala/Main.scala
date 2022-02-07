@@ -9,12 +9,12 @@ import scala.scalajs.js.timers
 
 sealed trait Mode
 object Mode {
-  case object Http extends Mode
-  case object Ws   extends Mode
+  case object HTTP extends Mode
+  case object WS   extends Mode
 
   def fromString(str: String): Option[Mode] = Some(str.toLowerCase).collect {
-    case "http" => Http
-    case "ws"   => Ws
+    case "http" => HTTP
+    case "ws"   => WS
   }
 }
 
@@ -34,72 +34,93 @@ object Config {
 }
 
 object Main {
-  def main(_args: Array[String]): Unit = {
+  def setupGlobalDevEnvironment(): Unit = {
+    import funstack.lambdaserver.ws
+
+    js.Dynamic.global.global.fun_dev_environment = js.Dynamic.literal(send_subscription = ws.WebsocketConnections.send: js.Function2[String, String, Unit])
+  }
+
+  def main(@annotation.unused _args: Array[String]): Unit = {
+    setupGlobalDevEnvironment()
+
     // TODO process facade? or how to get args correctly?
     val args =
-      js.Dynamic.global.process.argv.asInstanceOf[js.Array[String]].toList.drop(2) // ignore node and filename arg
+      js.Dynamic.global.process.argv.asInstanceOf[js.Array[String]].toList
 
-    parse(args) match {
-      case Right(config) =>
-        var cancel = () => ()
+    parseArgs(args) match {
+      case Right(configs) => configs.foreach(run)
 
-        var watcher: Option[fsMod.FSWatcher]             = None
-        var lastTimeout: Option[timers.SetTimeoutHandle] = None
-
-        def run(): Unit = {
-          cancel()
-          cancel = start(config) match {
-            case Right(newCancel) =>
-              println("Server started")
-              newCancel
-            case Left(error)      =>
-              println(s"Error starting server: $error")
-              () => ()
-          }
-        }
-
-        def watch(): Unit = {
-          lastTimeout.foreach(timers.clearTimeout)
-          lastTimeout = None
-
-          watcher.foreach(_.close())
-          watcher = None
-
-          val w: fsMod.FSWatcher = fsMod.watch(
-            filename = config.jsFileName,
-            listener = { (_, _) =>
-              println("File changed, restarting...")
-              run()
-              watch() // since the file might have been deleted, reinitialize the watcher
-            },
-          )
-
-          watcher = Some(w)
-
-          w.on(
-            "error",
-            { err =>
-              println(s"File watching error: $err")
-              lastTimeout.foreach(timers.clearTimeout)
-              lastTimeout = Some(timers.setTimeout(500)(watch()))
-            },
-          )
-        }
-
-        run()
-        watch()
-
-      case Left(error) =>
-        println(s"Error parsing arguments: $error")
+      case Left(error) => println(s"Error parsing arguments: $error")
     }
   }
+
+  def run(config: Config): Unit = {
+    var cancel = () => ()
+
+    var watcher: Option[fsMod.FSWatcher]             = None
+    var lastTimeout: Option[timers.SetTimeoutHandle] = None
+
+    def run(): Unit = {
+      cancel()
+      cancel = start(config) match {
+        case Right(newCancel) =>
+          println(s"${config.mode}> Server started")
+          newCancel
+        case Left(error)      =>
+          println(s"${config.mode}> Error starting server: $error")
+          () => ()
+      }
+    }
+
+    def watch(): Unit = {
+      lastTimeout.foreach(timers.clearTimeout)
+      lastTimeout = None
+
+      watcher.foreach(_.close())
+      watcher = None
+
+      val w: fsMod.FSWatcher = fsMod.watch(
+        filename = config.jsFileName,
+        listener = { (_, _) =>
+          println(s"${config.mode}> File changed, restarting...")
+          run()
+          watch() // since the file might have been deleted, reinitialize the watcher
+        },
+      )
+
+      watcher = Some(w)
+
+      w.on(
+        "error",
+        { err =>
+          println(s"${config.mode}> File watching error: $err")
+          lastTimeout.foreach(timers.clearTimeout)
+          lastTimeout = Some(timers.setTimeout(500)(watch()))
+        },
+      )
+    }
+
+    run()
+    watch()
+  }
+
+  def parseArgs(args: List[String]): Either[String, List[Config]] =
+    args
+      .drop(2) // ignore node and filename arg
+      .foldLeft[List[List[String]]](List(Nil)) { (acc, cur) =>
+        if (cur == "--") Nil :: acc else (cur :: acc.head) :: acc.tail
+      }
+      .reverse
+      .map(_.reverse)
+      .traverse(parse)
 
   def parse(args: List[String]): Either[String, Config] = args match {
     case List(modeString, jsFileName, exportName, portString) =>
       Config.parse(modeString, jsFileName, exportName, Some(portString))
-    case List(modeString, jsFileName, exportName)             => Config.parse(modeString, jsFileName, exportName, None)
+    case List(modeString, jsFileName, exportName)             =>
+      Config.parse(modeString, jsFileName, exportName, None)
     case other                                                =>
-      Left(s"Invalid arguments, expected '<http|ws> <js-file-name> <export> [<port>]', got: ${other.mkString(", ")}")
+      Left(s"Invalid arguments, expected '<http|ws> <js-file-name> <export> [<port>] [-- ...]', got: ${other.mkString(", ")}")
   }
 
   def requireUncached(module: String): js.Dynamic = {
@@ -124,11 +145,11 @@ object Main {
           .toRight(s"Cannot access export '${config.exportName}'")
 
       cancel = config.mode match {
-                 case Mode.Http =>
+                 case Mode.HTTP =>
                    val function = exportedHandler.asInstanceOf[http.DevServer.FunctionType]
                    val server   = http.DevServer.start(function, port = config.port.getOrElse(8080))
                    () => server.close()
-                 case Mode.Ws   =>
+                 case Mode.WS   =>
                    val function = exportedHandler.asInstanceOf[ws.DevServer.FunctionType]
                    val server   = ws.DevServer.start(function, port = config.port.getOrElse(8081))
                    () => server.close()

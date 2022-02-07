@@ -41,13 +41,14 @@ object DevServer {
           val bodyStr                       = body.result()
           val (gatewayEvent, lambdaContext) = transform(s"http://localhost:$port", req, bodyStr)
 
-          println("-" * 20)
+          println("HTTP> new request")
           lambdaHandler(gatewayEvent, lambdaContext).toFuture.onComplete {
             case Success(result) =>
               result.statusCode.foreach(res.statusCode = _)
               res.end(result.body)
             case Failure(error)  =>
               res.statusCode = 500 // internal server error
+              print("HTTP> ")
               error.printStackTrace()
               res.end()
           }

@@ -56,7 +56,7 @@ lazy val lambdaServer = project
     scalaJSUseMainModuleInitializer := true,
     webpackConfigFile               := Some(baseDirectory.value / "webpack.config.js"),
     libraryDependencies            ++=
-      Deps.cats.effect.value ::
+      Deps.cats.core.value ::
         Deps.awsLambdaJS.value ::
         Nil,
     Compile / npmDependencies      ++= Seq(
