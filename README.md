@@ -12,7 +12,7 @@ npm install --global @fun-stack/lambda-server
 ## Usage
 
 ```sh
-lambda-server <http|ws> <js-file-name> <export-name> [<port>]
+lambda-server <http|ws> <js-file-name> <export-name> [<port>] [-- ...]
 ```
 
 ## Development
