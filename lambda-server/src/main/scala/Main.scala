@@ -67,6 +67,7 @@ object Main {
           newCancel
         case Left(error)      =>
           println(s"${config.mode}> Error starting server: $error")
+          retry()
           () => ()
       }
     }
@@ -78,6 +79,7 @@ object Main {
       watcher.foreach(_.close())
       watcher = None
 
+      try {
       val w: fsMod.FSWatcher = fsMod.watch(
         filename = config.jsFileName,
         listener = { (_, _) =>
@@ -88,18 +90,30 @@ object Main {
       )
 
       watcher = Some(w)
+        run() // initial run
 
       w.on(
         "error",
-        { err =>
-          println(s"${config.mode}> File watching error: $err")
-          lastTimeout.foreach(timers.clearTimeout)
-          lastTimeout = Some(timers.setTimeout(500)(watch()))
-        },
+          err => retry(s"${config.mode}> File watching error: $err"),
       )
     }
+      catch {
+        error =>
+          error match {
+            case error if error.getMessage().startsWith("Error: ENOENT: no such file or directory") =>
+              retry("File not found.")
+            case _                                                                                  =>
+              error.printStackTrace()
+          }
+      }
+    }
 
-    run()
+    def retry(msg: String = ""): Unit = {
+      println(s"${if (msg.nonEmpty) s"$msg " else ""}Retrying...")
+      lastTimeout.foreach(timers.clearTimeout)
+      lastTimeout = Some(timers.setTimeout(2000)(watch()))
+    }
+
     watch()
   }
 
