@@ -6,6 +6,7 @@ import typings.node.fsMod
 import typings.node.pathMod
 
 import scala.scalajs.js.timers
+import typings.node.processMod.global.process
 
 sealed trait Mode
 object Mode {
@@ -43,9 +44,7 @@ object Main {
   def main(@annotation.unused _args: Array[String]): Unit = {
     setupGlobalDevEnvironment()
 
-    // TODO process facade? or how to get args correctly?
-    val args =
-      js.Dynamic.global.process.argv.asInstanceOf[js.Array[String]].toList
+    val args = process.argv.toList
 
     parseArgs(args) match {
       case Right(configs) => configs.foreach(run)
