@@ -67,10 +67,10 @@ jobs:
 
       - run: sbt test
 
-      - if: github.event_name != 'pull_request'
+      - if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/v')
         run: ./publish.sh
 
-      - if: github.event_name != 'pull_request'
+      - if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/v')
         uses: JS-DevTools/npm-publish@v1
         with:
           package: ./npm/package.json
