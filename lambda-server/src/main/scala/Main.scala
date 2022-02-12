@@ -80,23 +80,23 @@ object Main {
       watcher = None
 
       try {
-      val w: fsMod.FSWatcher = fsMod.watch(
-        filename = config.jsFileName,
-        listener = { (_, _) =>
-          println(s"${config.mode}> File changed, restarting...")
-          run()
-          watch() // since the file might have been deleted, reinitialize the watcher
-        },
-      )
+        val w: fsMod.FSWatcher = fsMod.watch(
+          filename = config.jsFileName,
+          listener = { (_, _) =>
+            println(s"${config.mode}> File changed, restarting...")
+            run()
+            watch() // since the file might have been deleted, reinitialize the watcher
+          },
+        )
 
-      watcher = Some(w)
+        watcher = Some(w)
         run() // initial run
 
-      w.on(
-        "error",
+        w.on(
+          "error",
           err => retry(s"${config.mode}> File watching error: $err"),
-      )
-    }
+        )
+      }
       catch {
         error =>
           error match {
