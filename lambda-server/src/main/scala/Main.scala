@@ -10,12 +10,14 @@ import typings.node.processMod.global.process
 
 sealed trait Mode
 object Mode {
-  case object HTTP extends Mode
-  case object WS   extends Mode
+  case object HTTP      extends Mode
+  case object WS        extends Mode
+  case object EventAuth extends Mode
 
   def fromString(str: String): Option[Mode] = Some(str.toLowerCase).collect {
-    case "http" => HTTP
-    case "ws"   => WS
+    case "http"      => HTTP
+    case "ws"        => WS
+    case "eventauth" => EventAuth
   }
 }
 
@@ -35,11 +37,12 @@ object Config {
 }
 
 object Main {
-  def setupGlobalDevEnvironment(): Unit = {
-    import funstack.lambdaserver.ws
 
-    js.Dynamic.global.global.fun_dev_environment = js.Dynamic.literal(send_subscription = ws.WebsocketConnections.send: js.Function2[String, String, Unit])
-  }
+  def setupGlobalDevEnvironment(): Unit =
+    js.Dynamic.global.global.fun_dev_environment = js.Dynamic.literal(
+      send_subscription = ws.WebsocketConnections.sendSubscription: js.Function2[String, String, Unit],
+      send_connection = ws.WebsocketConnections.sendConnection: js.Function2[String, String, Unit],
+    )
 
   def main(@annotation.unused _args: Array[String]): Unit = {
     setupGlobalDevEnvironment()
@@ -48,8 +51,7 @@ object Main {
 
     parseArgs(args) match {
       case Right(configs) => configs.foreach(run)
-
-      case Left(error) => println(s"Error parsing arguments: $error")
+      case Left(error)    => println(s"Error parsing arguments: $error")
     }
   }
 
@@ -166,6 +168,10 @@ object Main {
                    val function = exportedHandler.asInstanceOf[ws.DevServer.FunctionType]
                    val server   = ws.DevServer.start(function, port = config.port.getOrElse(8081))
                    () => server.close()
+                 case _         =>
+                   val function = exportedHandler.asInstanceOf[ws.WebsocketConnections.AuthFunctionType]
+                   ws.WebsocketConnections.eventAuthorizer = Some(function)
+                   () => ws.WebsocketConnections.eventAuthorizer = None
                }
     } yield { () =>
       val _ = cancel()

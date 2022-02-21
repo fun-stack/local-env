@@ -8,21 +8,29 @@ import typings.ws.wsStrings
 import typings.jwtDecode.mod.{default => jwt_decode}
 import typings.jwtDecode.mod.JwtPayload
 import scala.scalajs.js
-import scala.scalajs.js.annotation.JSExport
 import scala.util.{Failure, Success}
 import cats.implicits._
 
 private[lambdaserver] object WebsocketConnections {
   import scala.collection.mutable
 
+  type AuthFunctionType = js.Function2[aws_lambda.SNSEvent, aws_lambda.Context, js.Promise[Unit]]
+
+  var eventAuthorizer: Option[AuthFunctionType] = None
+
   private val connections   = mutable.HashMap[String, String => Unit]()              // connectionId -> send-method
+  private val users         = mutable.HashMap[String, String]()                      // connectionId -> userId
   private val subscriptions = mutable.HashMap[String, mutable.ArrayBuffer[String]]() // subscriptionKey -> [connectionId]
 
-  def connect(connectionId: String, send: String => Unit): Unit =
+  def connect(connectionId: String, userId: Option[String], send: String => Unit): Unit = {
     connections(connectionId) = send
+    userId.foreach(users(connectionId) = _)
+  }
 
-  def disconnect(connectionId: String): Unit =
+  def disconnect(connectionId: String): Unit = {
     connections -= connectionId
+    users -= connectionId
+  }
 
   def subscribe(connectionId: String, subscriptionKey: String): Unit = {
     val buf = subscriptions.getOrElseUpdate(subscriptionKey, new mutable.ArrayBuffer())
@@ -34,9 +42,20 @@ private[lambdaserver] object WebsocketConnections {
       buf -= connectionId
     }
 
-  def send(subscriptionKey: String, body: String): Unit = subscriptions.get(subscriptionKey).foreach { buf =>
-    buf.foreach(connectionId => connections.get(connectionId).foreach(_(body)))
-  }
+  def sendSubscription(subscriptionKey: String, body: String): Unit = subscriptions
+    .get(subscriptionKey)
+    .foreach(_.foreach { connectionId =>
+      eventAuthorizer match {
+        case None             =>
+          sendConnection(connectionId, body)
+        case Some(authorizer) =>
+          val userId           = users.get(connectionId)
+          val (event, context) = SNSMock.transform(body, userId = userId, connectionId = connectionId)
+          authorizer(event, context)
+      }
+    })
+
+  def sendConnection(connectionId: String, body: String): Unit = connections.get(connectionId).foreach(_(body))
 }
 
 object DevServer {
@@ -51,13 +70,33 @@ object DevServer {
       { (_, ws, msg) =>
         println("WS> new connection")
 
-        val token = {
+        val accessToken = {
           val queryParam = msg.url.get.split("=") // TODO
           if (queryParam.size > 1) queryParam(1) else ""
         }
 
+        val authorizer =
+          if (accessToken == "")
+            js.Dynamic.literal(
+              principalId = "anon",
+            )
+          else {
+            js.Object
+              .assign(
+                js.Dynamic
+                  .literal(
+                    principalId = "user",
+                  )
+                  .asInstanceOf[js.Object],
+                jwt_decode[JwtPayload](accessToken),
+              )
+              .asInstanceOf[js.Dynamic]
+          }
+
+        val userId = authorizer.sub.asInstanceOf[js.UndefOr[String]].toOption
+
         val connectionId = util.Random.alphanumeric.take(20).mkString
-        WebsocketConnections.connect(connectionId, ws.send(_))
+        WebsocketConnections.connect(connectionId, userId, ws.send(_))
 
         ws.on_close(
           wsStrings.close,
@@ -76,7 +115,7 @@ object DevServer {
               case Some("unsubscribe") => WebsocketConnections.unsubscribe(connectionId, json.get.subscription_key.asInstanceOf[String])
               case _                   =>
                 // call lambda
-                val (event, context) = transform(body, token, connectionId)
+                val (event, context) = transform(body, authorizer, connectionId)
                 lambdaHandler(event, context).toFuture.onComplete {
                   case Success(result) =>
                     ws.send(result.body)
@@ -93,23 +132,7 @@ object DevServer {
     wss
   }
 
-  def transform(body: String, accessToken: String, connectionId: String): (APIGatewayWSEvent, aws_lambda.Context) = {
-
-    val authorizer =
-      if (accessToken == "")
-        js.Dynamic.literal(
-          principalId = "anon",
-        )
-      else {
-        js.Object.assign(
-          js.Dynamic
-            .literal(
-              principalId = "user",
-            )
-            .asInstanceOf[js.Object],
-          jwt_decode[JwtPayload](accessToken),
-        )
-      }
+  def transform(body: String, authorizer: js.Dynamic, connectionId: String): (APIGatewayWSEvent, aws_lambda.Context) = {
 
     val randomRequestId = util.Random.alphanumeric.take(20).mkString
     val randomMessageId = util.Random.alphanumeric.take(20).mkString
