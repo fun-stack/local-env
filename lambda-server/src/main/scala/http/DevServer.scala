@@ -16,9 +16,11 @@ object DevServer {
   type FunctionType =
     js.Function2[APIGatewayProxyEventV2, aws_lambda.Context, js.Promise[APIGatewayProxyStructuredResultV2]]
 
+  var lambdaHandler: Option[FunctionType] = None
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def start(lambdaHandler: FunctionType, port: Int): Server = {
+  def start(port: Int): Server = {
     val requestListener = { (req: IncomingMessage, res: ServerResponse) =>
       val body = new StringBuilder()
 
@@ -42,7 +44,7 @@ object DevServer {
           val (gatewayEvent, lambdaContext) = transform(s"http://localhost:$port", req, bodyStr)
 
           println("HTTP> new request")
-          lambdaHandler(gatewayEvent, lambdaContext).toFuture.onComplete {
+          lambdaHandler.foreach(_(gatewayEvent, lambdaContext).toFuture.onComplete {
             case Success(result) =>
               result.statusCode.foreach(res.statusCode = _)
               res.end(result.body)
@@ -51,7 +53,7 @@ object DevServer {
               print("HTTP> ")
               error.printStackTrace()
               res.end()
-          }
+          })
         },
       )
 

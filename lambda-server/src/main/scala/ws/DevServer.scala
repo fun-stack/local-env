@@ -61,9 +61,11 @@ private[lambdaserver] object WebsocketConnections {
 object DevServer {
   type FunctionType = js.Function2[APIGatewayWSEvent, aws_lambda.Context, js.Promise[APIGatewayProxyStructuredResultV2]]
 
+  var lambdaHandler: Option[FunctionType] = None
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  def start(lambdaHandler: FunctionType, port: Int): WebSocketServer = {
+  def start(port: Int): WebSocketServer = {
     val wss = new WebSocketServer(ServerOptions().setPort(port.toDouble))
     wss.on_connection(
       wsStrings.connection,
@@ -116,13 +118,13 @@ object DevServer {
               case _                   =>
                 // call lambda
                 val (event, context) = transform(body, authorizer, connectionId)
-                lambdaHandler(event, context).toFuture.onComplete {
+                lambdaHandler.foreach(_(event, context).toFuture.onComplete {
                   case Success(result) =>
                     ws.send(result.body)
                   case Failure(error)  =>
                     print("WS> ")
                     error.printStackTrace()
-                }
+                })
             }
           },
         )

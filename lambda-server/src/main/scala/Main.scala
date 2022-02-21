@@ -8,32 +8,46 @@ import typings.node.pathMod
 import scala.scalajs.js.timers
 import typings.node.processMod.global.process
 
-sealed trait Mode
-object Mode {
-  case object HTTP      extends Mode
-  case object WS        extends Mode
-  case object EventAuth extends Mode
-
-  def fromString(str: String): Option[Mode] = Some(str.toLowerCase).collect {
-    case "http"      => HTTP
-    case "ws"        => WS
-    case "eventauth" => EventAuth
-  }
+sealed trait Config {
+  def mode: String
+  def jsFileName: String
+  def exportName: String
 }
+object Config       {
+  case class HTTP(jsFileName: String, exportName: String, port: Option[Int]) extends Config { def mode = "HTTP"      }
+  case class WS(jsFileName: String, exportName: String, port: Option[Int])   extends Config { def mode = "WS"        }
+  case class EventAuth(jsFileName: String, exportName: String)               extends Config { def mode = "EventAuth" }
 
-case class Config(mode: Mode, jsFileName: String, exportName: String, port: Option[Int])
-object Config {
+  def parse(mode: String, args: List[String]): Either[String, Config] =
+    mode.toLowerCase match {
+      case "http"      =>
+        args match {
+          case List(jsFileName, exportName)             => Right(HTTP(jsFileName, exportName, None))
+          case List(jsFileName, exportName, portString) =>
+            portString.toIntOption.map { port =>
+              HTTP(jsFileName, exportName, Some(port))
+            }.toRight(s"Unexpected port number: $portString")
+          case _                                        => Left("Expected: http <js-file-name> <export-name> [<port>]")
+        }
 
-  def parse(
-    modeString: String,
-    jsFileName: String,
-    exportName: String,
-    portString: Option[String],
-  ): Either[String, Config] =
-    for {
-      port <- portString.traverse(str => str.toIntOption.toRight(s"Unexpected port number: $str"))
-      mode <- Mode.fromString(modeString).toRight(s"Undefined mode, expected 'ws|http', got: $modeString")
-    } yield Config(mode, jsFileName, exportName, port)
+      case "ws"        =>
+        args match {
+          case List(jsFileName, exportName)             => Right(WS(jsFileName, exportName, None))
+          case List(jsFileName, exportName, portString) =>
+            portString.toIntOption.map { port =>
+              WS(jsFileName, exportName, Some(port))
+            }.toRight(s"Unexpected port number: $portString")
+          case _                                        => Left("Expected: ws <js-file-name> <export-name> [<port>]")
+        }
+
+      case "eventauth" =>
+        args match {
+          case List(jsFileName, exportName) => Right(EventAuth(jsFileName, exportName))
+          case _                            => Left("Expected: eventauth <js-file-name> <export-name>")
+        }
+
+      case mode        => Left(s"Expected mode <http|ws|eventauth>, got: $mode")
+    }
 }
 
 object Main {
@@ -56,23 +70,19 @@ object Main {
   }
 
   def run(config: Config): Unit = {
-    var cancel = () => ()
-
     var watcher: Option[fsMod.FSWatcher]             = None
     var lastTimeout: Option[timers.SetTimeoutHandle] = None
 
-    def run(): Unit = {
-      cancel()
-      cancel = start(config) match {
-        case Right(newCancel) =>
-          println(s"${config.mode}> Server started")
-          newCancel
-        case Left(error)      =>
-          println(s"${config.mode}> Error starting server: $error")
+    println(s"${config.mode}> Starting")
+    initialize(config)
+
+    def run(): Unit =
+      start(config) match {
+        case Right(())   => ()
+        case Left(error) =>
+          println(s"${config.mode}> Error: $error")
           retry()
-          () => ()
       }
-    }
 
     def watch(): Unit = {
       lastTimeout.foreach(timers.clearTimeout)
@@ -85,7 +95,7 @@ object Main {
         val w: fsMod.FSWatcher = fsMod.watch(
           filename = config.jsFileName,
           listener = { (_, _) =>
-            println(s"${config.mode}> File changed, restarting...")
+            println(s"${config.mode}> File changed, resetting...")
             run()
             watch() // since the file might have been deleted, reinitialize the watcher
           },
@@ -100,13 +110,10 @@ object Main {
         )
       }
       catch {
-        error =>
-          error match {
-            case error if error.getMessage().startsWith("Error: ENOENT: no such file or directory") =>
-              retry("File not found.")
-            case _                                                                                  =>
-              error.printStackTrace()
-          }
+        case error: Throwable if error.getMessage().startsWith("Error: ENOENT: no such file or directory") =>
+          retry("File not found.")
+        case error: Throwable                                                                              =>
+          error.printStackTrace()
       }
     }
 
@@ -130,12 +137,8 @@ object Main {
       .traverse(parse)
 
   def parse(args: List[String]): Either[String, Config] = args match {
-    case List(modeString, jsFileName, exportName, portString) =>
-      Config.parse(modeString, jsFileName, exportName, Some(portString))
-    case List(modeString, jsFileName, exportName)             =>
-      Config.parse(modeString, jsFileName, exportName, None)
-    case other                                                =>
-      Left(s"Invalid arguments, expected '<http|ws> <js-file-name> <export> [<port>] [-- ...]', got: ${other.mkString(", ")}")
+    case modeString :: tail => Config.parse(modeString, tail)
+    case _                  => Left("Got no arguments, expected mode.")
   }
 
   def requireUncached(module: String): js.Dynamic = {
@@ -146,7 +149,19 @@ object Main {
     g.__non_webpack_require__(module)
   }
 
-  def start(config: Config): Either[String, () => Unit] =
+  def initialize(config: Config): Unit =
+    config match {
+      case config: Config.HTTP =>
+        http.DevServer.start(port = config.port.getOrElse(8080))
+        ()
+      case config: Config.WS   =>
+        ws.DevServer.start(port = config.port.getOrElse(8081))
+        ()
+      case _: Config.EventAuth =>
+        ()
+    }
+
+  def start(config: Config): Either[String, Unit] =
     for {
       requiredJs      <-
         Either
@@ -158,22 +173,15 @@ object Main {
           .selectDynamic(config.exportName)
           .asInstanceOf[js.UndefOr[js.Any]]
           .toRight(s"Cannot access export '${config.exportName}'")
-
-      cancel = config.mode match {
-                 case Mode.HTTP =>
+    } yield config match {
+      case _: Config.HTTP      =>
                    val function = exportedHandler.asInstanceOf[http.DevServer.FunctionType]
-                   val server   = http.DevServer.start(function, port = config.port.getOrElse(8080))
-                   () => server.close()
-                 case Mode.WS   =>
+                   http.DevServer.lambdaHandler = Some(function)
+      case _: Config.WS        =>
                    val function = exportedHandler.asInstanceOf[ws.DevServer.FunctionType]
-                   val server   = ws.DevServer.start(function, port = config.port.getOrElse(8081))
-                   () => server.close()
-                 case _         =>
+                   ws.DevServer.lambdaHandler = Some(function)
+                 case _: Config.EventAuth =>
                    val function = exportedHandler.asInstanceOf[ws.WebsocketConnections.AuthFunctionType]
                    ws.WebsocketConnections.eventAuthorizer = Some(function)
-                   () => ws.WebsocketConnections.eventAuthorizer = None
                }
-    } yield { () =>
-      val _ = cancel()
-    }
 }
