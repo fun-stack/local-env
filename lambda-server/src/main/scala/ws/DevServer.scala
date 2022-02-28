@@ -30,6 +30,7 @@ private[lambdaserver] object WebsocketConnections {
   def disconnect(connectionId: String): Unit = {
     connections -= connectionId
     users -= connectionId
+    subscriptions.keys.foreach(unsubscribe(connectionId, _))
   }
 
   def subscribe(connectionId: String, subscriptionKey: String): Unit = {
