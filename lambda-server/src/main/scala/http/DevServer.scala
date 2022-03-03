@@ -16,7 +16,8 @@ object DevServer {
   type FunctionType =
     js.Function2[APIGatewayProxyEventV2, aws_lambda.Context, js.Promise[APIGatewayProxyStructuredResultV2]]
 
-  var lambdaHandler: Option[FunctionType] = None
+  var lambdaHandler: Option[FunctionType]           = None
+  var lambdaHandlerUnderscore: Option[FunctionType] = None
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -47,14 +48,20 @@ object DevServer {
             val bodyStr                       = body.result()
             val (gatewayEvent, lambdaContext) = transform(s"http://localhost:$port", req, bodyStr)
 
-            println("HTTP> new request")
-            lambdaHandler.foreach(_(gatewayEvent, lambdaContext).toFuture.onComplete {
+            println("Http> new request")
+
+            val handler = req.url.toOption match {
+              case Some(url) if url.startsWith("/_/") => lambdaHandlerUnderscore
+              case _                                  => lambdaHandler
+            }
+
+            handler.foreach(_(gatewayEvent, lambdaContext).toFuture.onComplete {
               case Success(result) =>
                 result.statusCode.foreach(res.statusCode = _)
                 res.end(result.body)
               case Failure(error)  =>
                 res.statusCode = 500 // internal server error
-                print("HTTP> ")
+                print("Http> ")
                 error.printStackTrace()
                 res.end()
             })

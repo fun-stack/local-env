@@ -10,48 +10,6 @@ import typings.node.processMod.global.process
 import java.io.PrintWriter
 import java.io.StringWriter
 
-sealed trait Config {
-  def mode: String
-  def jsFileName: String
-  def exportName: String
-}
-object Config       {
-  case class HTTP(jsFileName: String, exportName: String, port: Option[Int]) extends Config { def mode = "HTTP"      }
-  case class WS(jsFileName: String, exportName: String, port: Option[Int])   extends Config { def mode = "WS"        }
-  case class EventAuth(jsFileName: String, exportName: String)               extends Config { def mode = "EventAuth" }
-
-  def parse(mode: String, args: List[String]): Either[String, Config] =
-    mode.toLowerCase match {
-      case "http"      =>
-        args match {
-          case List(jsFileName, exportName)             => Right(HTTP(jsFileName, exportName, None))
-          case List(jsFileName, exportName, portString) =>
-            portString.toIntOption.map { port =>
-              HTTP(jsFileName, exportName, Some(port))
-            }.toRight(s"Unexpected port number: $portString")
-          case _                                        => Left("Expected: http <js-file-name> <export-name> [<port>]")
-        }
-
-      case "ws"        =>
-        args match {
-          case List(jsFileName, exportName)             => Right(WS(jsFileName, exportName, None))
-          case List(jsFileName, exportName, portString) =>
-            portString.toIntOption.map { port =>
-              WS(jsFileName, exportName, Some(port))
-            }.toRight(s"Unexpected port number: $portString")
-          case _                                        => Left("Expected: ws <js-file-name> <export-name> [<port>]")
-        }
-
-      case "eventauth" =>
-        args match {
-          case List(jsFileName, exportName) => Right(EventAuth(jsFileName, exportName))
-          case _                            => Left("Expected: eventauth <js-file-name> <export-name>")
-        }
-
-      case mode        => Left(s"Expected mode <http|ws|eventauth>, got: $mode")
-    }
-}
-
 object Main {
 
   def setupGlobalDevEnvironment(): Unit =
@@ -66,20 +24,25 @@ object Main {
     val args = process.argv.toList
 
     parseArgs(args) match {
-      case Right(configs) => configs.foreach(run)
-      case Left(error)    => println(s"Error parsing arguments: $error")
+      case Right(configs) =>
+        configs.foreach { config =>
+          initialize(config)
+
+          config match {
+            case config: Config.Handler => watch(config)
+            case _                      => ()
+          }
+        }
+      case Left(error)    => println(error)
     }
   }
 
-  def run(config: Config): Unit = {
+  def watch(config: Config.Handler): Unit = {
     var watcher: Option[fsMod.FSWatcher]             = None
     var lastTimeout: Option[timers.SetTimeoutHandle] = None
 
-    println(s"${config.mode}> Starting")
-    initialize(config)
-
     def run(): Unit =
-      start(config) match {
+      setHandler(config) match {
         case Right(())   => ()
         case Left(error) =>
           println(s"${config.mode}> Error: $error")
@@ -131,8 +94,10 @@ object Main {
   def parseArgs(args: List[String]): Either[String, List[Config]] =
     args
       .drop(2) // ignore node and filename arg
-      .foldLeft[List[List[String]]](List(Nil)) { (acc, cur) =>
-        if (cur == "--") Nil :: acc else (cur :: acc.head) :: acc.tail
+      .foldLeft[List[List[String]]](Nil) {
+        case (acc, cur) if cur.startsWith("-") => List(cur) :: acc
+        case (prev :: acc, cur)                => (cur :: prev) :: acc
+        case (acc, cur)                        => List(cur) :: acc
       }
       .reverse
       .map(_.reverse)
@@ -140,7 +105,7 @@ object Main {
 
   def parse(args: List[String]): Either[String, Config] = args match {
     case modeString :: tail => Config.parse(modeString, tail)
-    case _                  => Left("Got no arguments, expected mode.")
+    case args               => Left(s"Error parsing argument: $args")
   }
 
   def requireUncached(module: String): js.Dynamic = {
@@ -153,17 +118,21 @@ object Main {
 
   def initialize(config: Config): Unit =
     config match {
-      case config: Config.HTTP =>
-        http.DevServer.start(port = config.port.getOrElse(8080))
+      case config: Config.Http =>
+        val port = config.port.getOrElse(8080)
+        println(s"Http> Starting Http server on port $port")
+        http.DevServer.start(port = port)
         ()
-      case config: Config.WS   =>
-        ws.DevServer.start(port = config.port.getOrElse(8081))
+      case config: Config.Ws   =>
+        val port = config.port.getOrElse(8081)
+        println(s"Ws> Starting Ws server on port $port")
+        ws.DevServer.start(port = port)
         ()
-      case _: Config.EventAuth =>
+      case _                   =>
         ()
     }
 
-  def start(config: Config): Either[String, Unit] =
+  def setHandler(config: Config.Handler): Either[String, Unit] =
     for {
       requiredJs      <-
         Either
@@ -180,14 +149,17 @@ object Main {
           .asInstanceOf[js.UndefOr[js.Any]]
           .toRight(s"Cannot access export '${config.exportName}'")
     } yield config match {
-      case _: Config.HTTP      =>
-                   val function = exportedHandler.asInstanceOf[http.DevServer.FunctionType]
-                   http.DevServer.lambdaHandler = Some(function)
-      case _: Config.WS        =>
-                   val function = exportedHandler.asInstanceOf[ws.DevServer.FunctionType]
-                   ws.DevServer.lambdaHandler = Some(function)
-                 case _: Config.EventAuth =>
-                   val function = exportedHandler.asInstanceOf[ws.WebsocketConnections.AuthFunctionType]
-                   ws.WebsocketConnections.eventAuthorizer = Some(function)
-               }
+      case _: Config.HttpApi           =>
+        val function = exportedHandler.asInstanceOf[http.DevServer.FunctionType]
+        http.DevServer.lambdaHandler = Some(function)
+      case _: Config.HttpRpc           =>
+        val function = exportedHandler.asInstanceOf[http.DevServer.FunctionType]
+        http.DevServer.lambdaHandlerUnderscore = Some(function)
+      case _: Config.WsRpc             =>
+        val function = exportedHandler.asInstanceOf[ws.DevServer.FunctionType]
+        ws.DevServer.lambdaHandler = Some(function)
+      case _: Config.WsEventAuthorizer =>
+        val function = exportedHandler.asInstanceOf[ws.WebsocketConnections.AuthFunctionType]
+        ws.WebsocketConnections.eventAuthorizer = Some(function)
+    }
 }

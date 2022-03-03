@@ -12,7 +12,18 @@ npm install --global @fun-stack/lambda-server
 ## Usage
 
 ```sh
-lambda-server <http|ws> <js-file-name> <export-name> [<port>] [-- ...]
+lambda-server --help
+```
+
+Usage:
+```
+Usage: lambda-server <options>
+--http [<port>]
+--ws [<port>]
+--http-api <js-file-name> <export-name>
+--http-rpc <js-file-name> <export-name>
+--ws-rpc <js-file-name> <export-name>
+--ws-event-authorizer <js-file-name> <export-name>
 ```
 
 ## Development
@@ -31,6 +42,6 @@ echo lambda-server/target/scala-2.13/scalajs-bundler/main/lambda-server.js | ent
 cd npm
 mkdir -p .git # trick npm into thinking this is a git root
 npm version patch
-git push 
+git push
 git push --tags
 ```

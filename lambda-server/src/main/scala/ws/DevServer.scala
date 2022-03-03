@@ -71,7 +71,7 @@ object DevServer {
     wss.on_connection(
       wsStrings.connection,
       { (_, ws, msg) =>
-        println("WS> new connection")
+        println("Ws> new connection")
 
         val accessToken = {
           val queryParam = msg.url.get.split("=") // TODO
