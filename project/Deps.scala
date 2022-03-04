@@ -10,5 +10,5 @@ object Deps {
     val core = s("org.typelevel" %%% "cats-core" % "2.7.0")
   }
 
-  val awsLambdaJS = s("net.exoego" %%% "aws-lambda-scalajs-facade" % "0.11.0")
+  val awsLambdaJS = s("net.exoego" %%% "aws-lambda-scalajs-facade" % "0.12.1")
 }
