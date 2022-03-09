@@ -1,3 +1,4 @@
+const path = require('path');
 const webpack = require('webpack');
 const fs = require('fs');
 
@@ -13,3 +14,19 @@ module.exports.plugins.push(new webpack.BannerPlugin({
 module.exports.plugins.push(function () {
   this.plugin('done', () => fs.chmodSync('lambda-server.js', '755'))
 });
+
+module.exports.module = {
+  rules: [
+    {
+      test: /oidc-provider\/.*\.js$/,
+      use: {
+        loader: 'babel-loader',
+        options: {
+          plugins: [
+            '@babel/plugin-proposal-class-properties',
+          ]
+        }
+      }
+    }
+  ]
+};

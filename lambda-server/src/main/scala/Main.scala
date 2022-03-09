@@ -1,12 +1,12 @@
 package funstack.lambdaserver
 
-import scala.scalajs.js
 import cats.implicits._
 import typings.node.fsMod
 import typings.node.pathMod
-
-import scala.scalajs.js.timers
 import typings.node.processMod.global.process
+
+import scala.scalajs.js
+import scala.scalajs.js.timers
 import java.io.PrintWriter
 import java.io.StringWriter
 
@@ -21,9 +21,9 @@ object Main {
   def main(@annotation.unused _args: Array[String]): Unit = {
     setupGlobalDevEnvironment()
 
-    val args = process.argv.toList
+    val args = process.argv.toList.drop(2) // ignore node and filename args
 
-    parseArgs(args) match {
+    Config.parseArgs(args) match {
       case Right(configs) =>
         configs.foreach { config =>
           initialize(config)
@@ -91,23 +91,6 @@ object Main {
     watch()
   }
 
-  def parseArgs(args: List[String]): Either[String, List[Config]] =
-    args
-      .drop(2) // ignore node and filename arg
-      .foldLeft[List[List[String]]](Nil) {
-        case (acc, cur) if cur.startsWith("-") => List(cur) :: acc
-        case (prev :: acc, cur)                => (cur :: prev) :: acc
-        case (acc, cur)                        => List(cur) :: acc
-      }
-      .reverse
-      .map(_.reverse)
-      .traverse(parse)
-
-  def parse(args: List[String]): Either[String, Config] = args match {
-    case modeString :: tail => Config.parse(modeString, tail)
-    case args               => Left(s"Error parsing argument: $args")
-  }
-
   def requireUncached(module: String): js.Dynamic = {
     import js.Dynamic.{global => g}
     val requireCache = g.__non_webpack_require__.cache.asInstanceOf[js.Dictionary[js.Any]]
@@ -127,6 +110,11 @@ object Main {
         val port = config.port.getOrElse(8081)
         println(s"Ws> Starting Ws server on port $port")
         ws.DevServer.start(port = port)
+        ()
+      case config: Config.Auth =>
+        val port = config.port.getOrElse(8082)
+        println(s"Auth> Starting Auth server on port $port")
+        auth.DevServer.start(port = port)
         ()
       case _                   =>
         ()

@@ -20,6 +20,7 @@ Usage:
 Usage: lambda-server <options>
 --http [<port>]
 --ws [<port>]
+--auth [<port>]
 --http-api <js-file-name> <export-name>
 --http-rpc <js-file-name> <export-name>
 --ws-rpc <js-file-name> <export-name>
@@ -30,10 +31,10 @@ Usage: lambda-server <options>
 
 ```sh
 sbt ~lambdaServer/fastOptJS/webpack
-node lambda-server/target/scala-2.13/scalajs-bundler/main/lambda-server.js ws <path-to-js> handlerWebsocket 8080
+node lambda-server/target/scala-2.13/scalajs-bundler/main/lambda-server.js --ws 8080 --ws-rpc <path-to-js> handlerWebsocket
 
 # or, with file watching:
-echo lambda-server/target/scala-2.13/scalajs-bundler/main/lambda-server.js | entr -cnr node --enable-source-maps lambda-server/target/scala-2.13/scalajs-bundler/main/lambda-server.js ws <path-to-js> handlerWebsocket 8080
+echo lambda-server/target/scala-2.13/scalajs-bundler/main/lambda-server.js | entr -cnr node --enable-source-maps lambda-server/target/scala-2.13/scalajs-bundler/main/lambda-server.js --ws 8080 --ws-rpc <path-to-js> handlerWebsocket
 ```
 
 ## Release
