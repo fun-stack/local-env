@@ -7,6 +7,8 @@ import typings.node.pathMod
 
 import scala.scalajs.js.timers
 import typings.node.processMod.global.process
+import java.io.PrintWriter
+import java.io.StringWriter
 
 sealed trait Config {
   def mode: String
@@ -167,7 +169,11 @@ object Main {
         Either
           .catchNonFatal(requireUncached(pathMod.resolve(config.jsFileName)))
           .left
-          .map(e => s"Cannot require js file: $e")
+          .map { exception =>
+            val sw = new StringWriter
+            exception.printStackTrace(new PrintWriter(sw))
+            s"Error when requiring js file: ${sw.toString}"
+          }
       exportedHandler <-
         requiredJs
           .selectDynamic(config.exportName)
