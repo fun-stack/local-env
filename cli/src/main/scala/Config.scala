@@ -1,6 +1,25 @@
 package funstack.local
 
-import cats.implicits._
+sealed trait ParseResult[+T]
+object ParseResult {
+  case object Help                  extends ParseResult[Nothing]
+  case class Error(message: String) extends ParseResult[Nothing]
+  case class Success[T](value: T)   extends ParseResult[T]
+
+  def fromEither[T]: Either[String, T] => ParseResult[T] = {
+    case Right(value) => Success(value)
+    case Left(error)  => Error(error)
+  }
+
+  def foldCombine[T]: (ParseResult[List[T]], ParseResult[T]) => ParseResult[List[T]] = {
+    case (ParseResult.Success(values), ParseResult.Success(value))  => ParseResult.Success(value :: values)
+    case (ParseResult.Error(message1), ParseResult.Error(message2)) => ParseResult.Error(s"$message2, $message1")
+    case (ParseResult.Help, _)                                      => ParseResult.Help
+    case (_, ParseResult.Help)                                      => ParseResult.Help
+    case (error: ParseResult.Error, _)                              => error
+    case (_, error: ParseResult.Error)                              => error
+  }
+}
 
 sealed trait Config
 object Config {
@@ -19,79 +38,74 @@ object Config {
   case class WsRpc(jsFileName: String, exportName: String)             extends Handler { def mode = "WsRpc"             }
   case class WsEventAuthorizer(jsFileName: String, exportName: String) extends Handler { def mode = "WsEventAuthorizer" }
 
-  def parse(mode: String, args: List[String]): Either[String, Config] =
-    mode match {
-      case "-h" | "--help" =>
-        List()
-        Left("""Usage: fun-stack-local <options>
-               |--http [<port>]
-               |--ws [<port>]
-               |--auth [<port>]
-               |--http-api <js-file-name> <export-name>
-               |--http-rpc <js-file-name> <export-name>
-               |--ws-rpc <js-file-name> <export-name>
-               |--ws-event-authorizer <js-file-name> <export-name>""".stripMargin)
+  val helpMessage = """Usage: fun-stack-local <options>
+         |--http [<port>]
+         |--ws [<port>]
+         |--auth [<port>]
+         |--http-api <js-file-name> <export-name>
+         |--http-rpc <js-file-name> <export-name>
+         |--ws-rpc <js-file-name> <export-name>
+         |--ws-event-authorizer <js-file-name> <export-name>""".stripMargin
 
-      case "--http" =>
+  def parse(args: List[String]): ParseResult[Config] =
+    args match {
+      case ("-h" :: _) | ("--help" :: _) => ParseResult.Help
+
+      case "--http" :: args =>
         args match {
-          case Nil              => Right(Http(None))
-          case List(portString) => portString.toIntOption.map(port => Http(Some(port))).toRight(s"Unexpected port number: $portString")
-          case _                => Left("Error parsing arguments. Expected: --http [<port>]")
+          case Nil              => ParseResult.Success(Http(None))
+          case List(portString) => ParseResult.fromEither(portString.toIntOption.map(port => Http(Some(port))).toRight(s"Unexpected port number: $portString"))
+          case _                => ParseResult.Error("Error parsing arguments. Expected: --http [<port>]")
         }
 
-      case "--ws"   =>
+      case "--ws" :: args   =>
         args match {
-          case Nil              => Right(Ws(None))
-          case List(portString) => portString.toIntOption.map(port => Ws(Some(port))).toRight(s"Unexpected port number: $portString")
-          case _                => Left("Error parsing arguments. Expected: --ws [<port>]")
+          case Nil              => ParseResult.Success(Ws(None))
+          case List(portString) => ParseResult.fromEither(portString.toIntOption.map(port => Ws(Some(port))).toRight(s"Unexpected port number: $portString"))
+          case _                => ParseResult.Error("Error parsing arguments. Expected: --ws [<port>]")
         }
-      case "--auth" =>
+      case "--auth" :: args =>
         args match {
-          case Nil              => Right(Auth(None))
-          case List(portString) => portString.toIntOption.map(port => Auth(Some(port))).toRight(s"Unexpected port number: $portString")
-          case _                => Left("Error parsing arguments. Expected: --auth [<port>]")
-        }
-
-      case "--http-api" =>
-        args match {
-          case List(jsFileName, exportName) => Right(HttpApi(jsFileName, exportName))
-          case _                            => Left("Error parsing arguments. Expected: --http-api <js-file-name> <export-name>")
+          case Nil              => ParseResult.Success(Auth(None))
+          case List(portString) => ParseResult.fromEither(portString.toIntOption.map(port => Auth(Some(port))).toRight(s"Unexpected port number: $portString"))
+          case _                => ParseResult.Error("Error parsing arguments. Expected: --auth [<port>]")
         }
 
-      case "--http-rpc" =>
+      case "--http-api" :: args =>
         args match {
-          case List(jsFileName, exportName) => Right(HttpRpc(jsFileName, exportName))
-          case _                            => Left("Error parsing arguments. Expected: --http-rpc <js-file-name> <export-name>")
+          case List(jsFileName, exportName) => ParseResult.Success(HttpApi(jsFileName, exportName))
+          case _                            => ParseResult.Error("Error parsing arguments. Expected: --http-api <js-file-name> <export-name>")
         }
 
-      case "--ws-rpc" =>
+      case "--http-rpc" :: args =>
         args match {
-          case List(jsFileName, exportName) => Right(WsRpc(jsFileName, exportName))
-          case _                            => Left("Error parsing arguments. Expected: --ws-rpc <js-file-name> <export-name>")
+          case List(jsFileName, exportName) => ParseResult.Success(HttpRpc(jsFileName, exportName))
+          case _                            => ParseResult.Error("Error parsing arguments. Expected: --http-rpc <js-file-name> <export-name>")
         }
 
-      case "--ws-event-authorizer" =>
+      case "--ws-rpc" :: args =>
         args match {
-          case List(jsFileName, exportName) => Right(WsEventAuthorizer(jsFileName, exportName))
-          case _                            => Left("Error parsing arguments. Expected: --ws-event-authorizer <js-file-name> <export-name>")
+          case List(jsFileName, exportName) => ParseResult.Success(WsRpc(jsFileName, exportName))
+          case _                            => ParseResult.Error("Error parsing arguments. Expected: --ws-rpc <js-file-name> <export-name>")
         }
 
-      case mode => Left(s"Error parsing arguments. Expected mode --<help|http|ws|http-api|http-rpc|ws-rpc|ws-event-authorizer>, got: $mode")
+      case "--ws-event-authorizer" :: args =>
+        args match {
+          case List(jsFileName, exportName) => ParseResult.Success(WsEventAuthorizer(jsFileName, exportName))
+          case _                            => ParseResult.Error("Error parsing arguments. Expected: --ws-event-authorizer <js-file-name> <export-name>")
+        }
+
+      case args => ParseResult.Error(s"Error parsing arguments. Got: $args")
     }
 
-  def parseArgs(args: List[String]): Either[String, List[Config]] =
+  def parseArgs(args: List[String]): ParseResult[List[Config]] =
     args
       .foldLeft[List[List[String]]](Nil) {
         case (acc, cur) if cur.startsWith("-") => List(cur) :: acc
         case (prev :: acc, cur)                => (cur :: prev) :: acc
         case (acc, cur)                        => List(cur) :: acc
       }
-      .reverse
       .map(_.reverse)
-      .traverse(parseArgsGroup)
-
-  def parseArgsGroup(args: List[String]): Either[String, Config] = args match {
-    case modeString :: tail => parse(modeString, tail)
-    case args               => Left(s"Error parsing argument: $args")
-  }
+      .map(parse)
+      .foldLeft[ParseResult[List[Config]]](ParseResult.Success(Nil))(ParseResult.foldCombine)
 }

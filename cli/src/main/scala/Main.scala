@@ -34,7 +34,15 @@ object Main {
     val args = process.argv.toList.drop(2) // ignore node and filename args
 
     Config.parseArgs(args) match {
-      case Right(configs) =>
+      case ParseResult.Error(message) =>
+        println(s"Error: $message")
+        println(Config.helpMessage)
+
+      case ParseResult.Success(Nil) | ParseResult.Help =>
+        println(Config.helpMessage)
+
+      case ParseResult.Success(configs) =>
+        println(configs)
         setupGlobalDevEnvironment(configs)
         configs.foreach { config =>
           initialize(config)
@@ -44,7 +52,6 @@ object Main {
             case _                      => ()
           }
         }
-      case Left(error)    => println(error)
     }
   }
 
