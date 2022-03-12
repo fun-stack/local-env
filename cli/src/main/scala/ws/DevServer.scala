@@ -1,4 +1,4 @@
-package funstack.lambdaserver.ws
+package funstack.local.ws
 
 import net.exoego.facade.aws_lambda.APIGatewayProxyStructuredResultV2
 import net.exoego.facade.aws_lambda
@@ -11,7 +11,7 @@ import scala.scalajs.js
 import scala.util.{Failure, Success}
 import cats.implicits._
 
-private[lambdaserver] object WebsocketConnections {
+private[local] object WebsocketConnections {
   import scala.collection.mutable
 
   type AuthFunctionType = js.Function2[aws_lambda.SNSEvent, aws_lambda.Context, js.Promise[Unit]]

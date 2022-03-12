@@ -1,4 +1,4 @@
-package funstack.lambdaserver.http
+package funstack.local.http
 
 import typings.node.httpMod.createServer
 import typings.node.httpMod.IncomingMessage

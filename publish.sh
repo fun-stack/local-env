@@ -6,8 +6,8 @@ rm -rf ./npm/bin/
 mkdir ./npm/bin/
 
 # TODO: fullOptJS breaks oidc-provider code
-# sbt lambdaServer/fullOptJS::webpack
-sbt lambdaServer/fastOptJS::webpack
+# sbt cli/fullOptJS::webpack
+sbt cli/fastOptJS::webpack
 
-cp ./lambda-server/target/scala-2.13/scalajs-bundler/main/lambda-server.js ./npm/bin/
+cp ./cli/target/scala-2.13/scalajs-bundler/main/fun-stack-local.js ./npm/bin/
 cp ./README.md ./npm/

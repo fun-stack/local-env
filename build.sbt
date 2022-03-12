@@ -7,12 +7,12 @@ inThisBuild(
     organization           := "io.github.fun-stack",
     scalaVersion           := "2.13.8",
     licenses               := Seq("MIT License" -> url("https://opensource.org/licenses/MIT")),
-    homepage               := Some(url("https://github.com/fun-stack/lambda-server")),
+    homepage               := Some(url("https://github.com/fun-stack/fun-stack-local")),
     scmInfo                := Some(
       ScmInfo(
-        url("https://github.com/fun-stack/lambda-server"),
-        "scm:git:git@github.com:fun-stack/lambda-server.git",
-        Some("scm:git:git@github.com:fun-stack/lambda-server.git"),
+        url("https://github.com/fun-stack/fun-stack-local"),
+        "scm:git:git@github.com:fun-stack/fun-stack-local.git",
+        Some("scm:git:git@github.com:fun-stack/fun-stack-local.git"),
       ),
     ),
     pomExtra               :=
@@ -39,7 +39,7 @@ lazy val commonSettings = Seq(
 lazy val jsSettings = Seq(
   useYarn       := true,
   scalacOptions += {
-    val githubRepo    = "fun-stack/lambda-server"
+    val githubRepo    = "fun-stack/fun-stack-local"
     val local         = baseDirectory.value.toURI
     val subProjectDir = baseDirectory.value.getName
     val remote        = s"https://raw.githubusercontent.com/${githubRepo}/${git.gitHeadCommit.value.get}"
@@ -47,12 +47,12 @@ lazy val jsSettings = Seq(
   },
 )
 
-lazy val lambdaServer = project
-  .in(file("lambda-server"))
+lazy val cli = project
+  .in(file("cli"))
   .enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin, ScalablyTypedConverterPlugin)
   .settings(commonSettings, jsSettings)
   .settings(
-    name                            := "lambda-server",
+    name                            := "fun-stack-local",
     scalaJSUseMainModuleInitializer := true,
     webpackConfigFile               := Some(baseDirectory.value / "webpack.config.js"),
     libraryDependencies            ++=
@@ -79,10 +79,3 @@ lazy val lambdaServer = project
       "babel-loader" -> "^8.2.3",
     )
   )
-
-lazy val root = project
-  .in(file("."))
-  .settings(
-    publish / skip := true,
-  )
-  .aggregate(lambdaServer)

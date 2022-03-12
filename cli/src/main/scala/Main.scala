@@ -1,4 +1,4 @@
-package funstack.lambdaserver
+package funstack.local
 
 import cats.implicits._
 import typings.node.fsMod

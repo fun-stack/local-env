@@ -1,6 +1,6 @@
-# lambda-server
+# fun-stack-local
 
-Can replicate fun-stack infrastructure locally: AWS lambdas with a HTTP/WS Server, local cognito.
+Replicate fun-stack infrastructure locally: AWS lambdas with a HTTP/WS Server, local cognito.
 
 See Examples for how to use it:
 - Scala Project Template: [fun-stack-example](https://github.com/fun-stack/fun-stack-example)
@@ -14,18 +14,18 @@ See SDK library for scala to communicate with the infrastructure in your code:
 ## Install
 
 ```sh
-npm install --global @fun-stack/lambda-server
+npm install --global @fun-stack/fun-stack-local
 ```
 
 ## Usage
 
 ```sh
-lambda-server --help
+fun-stack-local --help
 ```
 
 Usage:
 ```
-Usage: lambda-server <options>
+Usage: fun-stack-local <options>
 --http [<port>]
 --ws [<port>]
 --auth [<port>]
@@ -38,11 +38,11 @@ Usage: lambda-server <options>
 ## Development
 
 ```sh
-sbt ~lambdaServer/fastOptJS/webpack
-node lambda-server/target/scala-2.13/scalajs-bundler/main/lambda-server.js --ws 8080 --ws-rpc <path-to-js> handlerWebsocket
+sbt ~cli/fastOptJS/webpack
+node cli/target/scala-2.13/scalajs-bundler/main/fun-stack-local.js --ws 8080 --ws-rpc <path-to-js> handlerWebsocket
 
 # or, with file watching:
-echo lambda-server/target/scala-2.13/scalajs-bundler/main/lambda-server.js | entr -cnr node --enable-source-maps lambda-server/target/scala-2.13/scalajs-bundler/main/lambda-server.js --ws 8080 --ws-rpc <path-to-js> handlerWebsocket
+echo cli/target/scala-2.13/scalajs-bundler/main/fun-stack-local.js | entr -cnr node --enable-source-maps cli/target/scala-2.13/scalajs-bundler/main/fun-stack-local.js --ws 8080 --ws-rpc <path-to-js> handlerWebsocket
 ```
 
 ## Release

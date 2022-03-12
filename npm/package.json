@@ -1,16 +1,16 @@
 {
-  "name": "@fun-stack/lambda-server",
+  "name": "@fun-stack/fun-stack-local",
   "version": "0.2.1",
-  "description": "Run AWS lambdas locally with a HTTP/WS Server",
-  "main": "./bin/lambda-server.js",
+  "description": "Replicate fun-stack infrastructure locally",
+  "main": "./bin/fun-stack-local.js",
   "bin": {
-    "lambda-server": "./bin/lambda-server.js"
+    "fun-stack-local": "./bin/fun-stack-local.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fun-stack/lambda-server.git"
+    "url": "git+https://github.com/fun-stack/fun-stack-local.git"
   },
   "author": "cornerman",
   "license": "MIT",
-  "homepage": "https://github.com/fun-stack/lambda-server"
+  "homepage": "https://github.com/fun-stack/fun-stack-local"
 }

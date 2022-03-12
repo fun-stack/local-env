@@ -1,4 +1,4 @@
-package funstack.lambdaserver.auth
+package funstack.local.auth
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport

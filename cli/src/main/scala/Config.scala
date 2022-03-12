@@ -1,4 +1,4 @@
-package funstack.lambdaserver
+package funstack.local
 
 import cats.implicits._
 
@@ -23,7 +23,7 @@ object Config {
     mode match {
       case "-h" | "--help" =>
         List()
-        Left("""Usage: lambda-server <options>
+        Left("""Usage: fun-stack-local <options>
                |--http [<port>]
                |--ws [<port>]
                |--auth [<port>]
