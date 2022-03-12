@@ -6,25 +6,36 @@ import typings.node.pathMod
 import typings.node.processMod.global.process
 
 import scala.scalajs.js
+import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.timers
 import java.io.PrintWriter
 import java.io.StringWriter
 
 object Main {
 
-  def setupGlobalDevEnvironment(): Unit =
+  def setupGlobalDevEnvironment(configs: List[Config]): Unit = {
+    val hasWs   = configs.exists {
+      case _: Config.Ws => true
+      case _            => false
+    }
+    val hasAuth = configs.exists {
+      case _: Config.Auth => true
+      case _              => false
+    }
+
     js.Dynamic.global.global.fun_dev_environment = js.Dynamic.literal(
-      send_subscription = ws.WebsocketConnections.sendSubscription: js.Function2[String, String, Unit],
-      send_connection = ws.WebsocketConnections.sendConnection: js.Function2[String, String, Unit],
+      send_subscription = Option.when(hasWs)(ws.WebsocketConnections.sendSubscription: js.Function2[String, String, Unit]).orUndefined,
+      send_connection = Option.when(hasWs)(ws.WebsocketConnections.sendConnection: js.Function2[String, String, Unit]).orUndefined,
+      get_email = Option.when(hasAuth)(auth.AuthMock.getEmailForUser: js.Function1[String, String]).orUndefined,
     )
+  }
 
   def main(@annotation.unused _args: Array[String]): Unit = {
-    setupGlobalDevEnvironment()
-
     val args = process.argv.toList.drop(2) // ignore node and filename args
 
     Config.parseArgs(args) match {
       case Right(configs) =>
+        setupGlobalDevEnvironment(configs)
         configs.foreach { config =>
           initialize(config)
 
