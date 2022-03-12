@@ -1,7 +1,15 @@
 # lambda-server
 
-Run AWS lambdas locally with a HTTP/WS Server
+Can replicate fun-stack infrastructure locally: AWS lambdas with a HTTP/WS Server, local cognito.
 
+See Examples for how to use it:
+- Scala Project Template: [fun-stack-example](https://github.com/fun-stack/fun-stack-example)
+
+See terraform module for the corresponding AWS infrastructure:
+- Terraform Module: [terraform-aws-fun](https://github.com/fun-stack/terraform-aws-fun) (version `>= 0.5.0`)
+
+See SDK library for scala to communicate with the infrastructure in your code:
+- Scala SDK: [fun-stack-scala](https://github.com/fun-stack/fun-stack-scala)
 
 ## Install
 
