@@ -4,7 +4,7 @@ const express = require('express');
 const {Provider} = require('oidc-provider');
 
 const clientScope = 'email profile openid api';
-const resourceUri = 'urn:fun:rs';
+const resourceUri = 'urn:fun:stack';
 
 // https://github.com/panva/node-oidc-provider/tree/main/docs
 function configuration() {
