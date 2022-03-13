@@ -24,9 +24,9 @@ object Main {
     }
 
     js.Dynamic.global.global.fun_dev_environment = js.Dynamic.literal(
-      send_subscription = Option.when(hasWs)(ws.WebsocketConnections.sendSubscription: js.Function2[String, String, Unit]).orUndefined,
-      send_connection = Option.when(hasWs)(ws.WebsocketConnections.sendConnection: js.Function2[String, String, Unit]).orUndefined,
-      get_email = Option.when(hasAuth)(auth.AuthMock.getEmailForUser: js.Function1[String, String]).orUndefined,
+      sendSubscription = Option.when(hasWs)(ws.WebsocketConnections.sendSubscription: js.Function2[String, String, Unit]).orUndefined,
+      sendConnection = Option.when(hasWs)(ws.WebsocketConnections.sendConnection: js.Function2[String, String, Unit]).orUndefined,
+      getEmail = Option.when(hasAuth)(auth.AuthMock.getEmailForUser: js.Function1[String, String]).orUndefined,
     )
   }
 
