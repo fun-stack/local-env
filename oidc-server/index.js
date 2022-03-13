@@ -3,17 +3,19 @@ const url = require('url');
 const express = require('express');
 const {Provider} = require('oidc-provider');
 
-const clientScope = 'email profile openid';
+const clientScope = 'email profile openid api';
+const resourceUri = 'urn:fun:rs';
 
 // https://github.com/panva/node-oidc-provider/tree/main/docs
-function configuration(extraClaims) {
+function configuration() {
   return {
     claims: {
+      api: [],
       address: ['address'],
       email: ['email', 'email_verified'],
       phone: ['phone_number', 'phone_number_verified'],
       profile: ['birthdate', 'family_name', 'gender', 'given_name', 'locale', 'middle_name', 'name',
-        'nickname', 'picture', 'preferred_username', 'profile', 'updated_at', 'website', 'zoneinfo', 'cognito:username', 'cognito:groups'].concat(Object.keys(extraClaims)),
+        'nickname', 'picture', 'preferred_username', 'profile', 'updated_at', 'website', 'zoneinfo', 'cognito:username']
     },
 
     // copy cognito structure https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-userpools-server-contract-reference.html
@@ -45,6 +47,29 @@ function configuration(extraClaims) {
     }],
 
     conformIdTokenClaims: false,
+
+    extraTokenClaims(ctx, token) {
+      return {
+        "sub": token.accountId,
+        "username": token.accountId,
+        "cognito:groups": []
+      }
+    },
+
+    features: {
+      resourceIndicators: {
+        enabled: true,
+        getResourceServerInfo: () => {
+          return {
+            scope: clientScope,
+            audience: 'fun-api',
+            accessTokenTTL: 60 * 60, // 2 hours
+            accessTokenFormat: 'jwt'
+          }
+        },
+        useGrantedResource: () => true
+      }
+    },
 
     pkce: {
       required(ctx, client) {
@@ -78,9 +103,9 @@ function configuration(extraClaims) {
           accountId: ctx.oidc.account.accountId,
         });
 
-        grant.addOIDCScope('openid');
-        grant.addOIDCScope('email');
-        grant.addOIDCScope('profile');
+        grant.addOIDCScope(clientScope);
+        grant.addResourceScope(resourceUri, clientScope);
+
         await grant.save();
         return grant;
       }
@@ -89,14 +114,13 @@ function configuration(extraClaims) {
     async findAccount(ctx, id) {
       return {
         accountId: id,
+        // account: id,
         async claims(use, scope) {
           return {
             sub: id,
             "cognito:username": id,
-            "cognito:groups": [],
             email: `${id}@localhost`,
-            email_verified: true,
-            ...extraClaims(id)
+            email_verified: true
           };
         },
       };
@@ -104,8 +128,8 @@ function configuration(extraClaims) {
   };
 }
 
-function start(port, extraClaims = id => {return {}}) {
-  const oidc = new Provider(`http://localhost:${port}`, configuration(extraClaims));
+function start(port) {
+  const oidc = new Provider(`http://localhost:${port}`, configuration());
 
   const app = express();
 
@@ -113,12 +137,12 @@ function start(port, extraClaims = id => {return {}}) {
   (async () => {
     app.use((req, res, next) => {
       // make compatible with cognito
-      if (req.method === 'GET' && (req.path === '/oauth2/authorize' && !(req.query || {}).scope)) {
+      if (req.method === 'GET' && (req.path === '/oauth2/authorize' && (!(req.query || {}).resource || !(req.query || {}).scope))) {
         const newUrl = url.format({
           protocol: 'http',
           host: req.get('host'),
           pathname: '/oauth2/authorize',
-          query: Object.assign({scope: clientScope}, req.query || {})
+          query: Object.assign({scope: clientScope, resource: resourceUri}, req.query || {})
         });
         res.redirect(newUrl);
       } else if (req.method === 'GET' && (req.path === '/login' || req.path === '/signup')) {
