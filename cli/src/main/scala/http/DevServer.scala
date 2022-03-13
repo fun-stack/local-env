@@ -11,6 +11,7 @@ import scala.scalajs.js
 import scala.util.{Failure, Success}
 import java.net.URI
 import js.JSConverters._
+import funstack.local.helper.AccessToken
 
 object DevServer {
   type FunctionType =
@@ -95,6 +96,11 @@ object DevServer {
     val host     = Option(url.getHost()).getOrElse("") // TODO: includes port number, but it shouldn't?
     val path     = s"/latest${url.getPath()}"          // TODO: why latest?
 
+    val authHeader  = req.headers.asInstanceOf[js.Dictionary[String]].get("authorization")
+    val accessToken = authHeader.map(_.split(" ")).collect { case Array("Bearer", token) => token }
+
+    val authorizerDict = AccessToken.toAuthorizer(accessToken)
+
     val randomRequestId = util.Random.alphanumeric.take(20).mkString
     val gateWayEvent    = APIGatewayProxyEventV2(
       version = "2.0",
@@ -108,7 +114,7 @@ object DevServer {
       requestContext = APIGatewayProxyEventV2.RequestContext(
         accountId = "123456789012",
         apiId = "r3pmxmplak",
-        authorizer = js.undefined, // TODO: extract from accesstoken like in ws
+        authorizer = js.Dictionary("lambda" -> authorizerDict),
         domainName = host,
         domainPrefix = host.split(".").headOption.getOrElse(url.getHost()),
         http = APIGatewayProxyEventV2.RequestContext.Http(
@@ -117,11 +123,11 @@ object DevServer {
           protocol = "HTTP/1.1",
           sourceIp = "127.0.0.1",
           userAgent = req.headers.`user-agent`.getOrElse(""),
-        ),                         // RequestContext.Http
+        ),                        // RequestContext.Http
         requestId = randomRequestId,
         routeKey = routeKey,
         stage = "$default",
-        time = now.toISOString(),  // TODO: ISO 8601 maybe not correct. Examples have "21/Nov/2020:20:39:08 +0000" which is a different format,
+        time = now.toISOString(), // TODO: ISO 8601 maybe not correct. Examples have "21/Nov/2020:20:39:08 +0000" which is a different format,
         timeEpoch = now.getUTCMilliseconds(),
       ),
       isBase64Encoded = false,

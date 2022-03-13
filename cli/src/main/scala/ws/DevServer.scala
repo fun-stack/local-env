@@ -5,11 +5,10 @@ import net.exoego.facade.aws_lambda
 import typings.ws.mod.WebSocketServer
 import typings.ws.mod.ServerOptions
 import typings.ws.wsStrings
-import typings.jwtDecode.mod.{default => jwt_decode}
-import typings.jwtDecode.mod.JwtPayload
 import scala.scalajs.js
 import scala.util.{Failure, Success}
 import cats.implicits._
+import funstack.local.helper.AccessToken
 
 private[local] object WebsocketConnections {
   import scala.collection.mutable
@@ -75,26 +74,10 @@ object DevServer {
 
         val accessToken = {
           val queryParam = msg.url.get.split("=") // TODO
-          if (queryParam.size > 1) queryParam(1) else ""
+          if (queryParam.size > 1) Some(queryParam(1)) else None
         }
 
-        val authorizer =
-          if (accessToken == "")
-            js.Dynamic.literal(
-              principalId = "anon",
-            )
-          else {
-            js.Object
-              .assign(
-                js.Dynamic
-                  .literal(
-                    principalId = "user",
-                  )
-                  .asInstanceOf[js.Object],
-                jwt_decode[JwtPayload](accessToken),
-              )
-              .asInstanceOf[js.Dynamic]
-          }
+        val authorizer = AccessToken.toAuthorizer(accessToken)
 
         val userId = authorizer.sub.asInstanceOf[js.UndefOr[String]].toOption
 
