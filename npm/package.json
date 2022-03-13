@@ -1,16 +1,16 @@
 {
-  "name": "@fun-stack/fun-stack-local",
+  "name": "@fun-stack/local-env",
   "version": "0.2.1",
   "description": "Replicate fun-stack infrastructure locally",
-  "main": "./bin/fun-stack-local.js",
+  "main": "./bin/fun-local-env.js",
   "bin": {
-    "fun-stack-local": "./bin/fun-stack-local.js"
+    "fun-local-env": "./bin/fun-local-env.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fun-stack/fun-stack-local.git"
+    "url": "git+https://github.com/fun-stack/local-env.git"
   },
   "author": "cornerman",
   "license": "MIT",
-  "homepage": "https://github.com/fun-stack/fun-stack-local"
+  "homepage": "https://github.com/fun-stack/local-env"
 }

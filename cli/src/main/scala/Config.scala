@@ -38,7 +38,7 @@ object Config {
   case class WsRpc(jsFileName: String, exportName: String)             extends Handler { def mode = "WsRpc"             }
   case class WsEventAuthorizer(jsFileName: String, exportName: String) extends Handler { def mode = "WsEventAuthorizer" }
 
-  val helpMessage = """Usage: fun-stack-local <options>
+  val helpMessage = """Usage: fun-local-env <options>
          |--http [<port>]
          |--ws [<port>]
          |--auth [<port>]

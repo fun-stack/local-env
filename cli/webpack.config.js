@@ -4,7 +4,7 @@ const fs = require('fs');
 
 module.exports = require('./scalajs.webpack.config');
 
-module.exports.output.filename = "fun-stack-local.js";
+module.exports.output.filename = "fun-local-env.js";
 module.exports.target = "node";
 module.exports.plugins = module.exports.plugins || [];
 module.exports.plugins.push(function () {
@@ -18,7 +18,7 @@ module.exports.plugins.push(new webpack.BannerPlugin({
   raw: true,
 }));
 module.exports.plugins.push(function () {
-  this.plugin('done', () => fs.chmodSync('fun-stack-local.js', '755'))
+  this.plugin('done', () => fs.chmodSync('fun-local-env.js', '755'))
 });
 module.exports.plugins.push(new webpack.NormalModuleReplacementPlugin(
   /oidc-provider\/.*\/attention/,

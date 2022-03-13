@@ -9,5 +9,5 @@ mkdir ./npm/bin/
 # sbt cli/fullOptJS::webpack
 sbt cli/fastOptJS::webpack
 
-cp ./cli/target/scala-2.13/scalajs-bundler/main/fun-stack-local.js ./npm/bin/
+cp ./cli/target/scala-2.13/scalajs-bundler/main/fun-local-env.js ./npm/bin/
 cp ./README.md ./npm/

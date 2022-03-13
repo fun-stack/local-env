@@ -7,12 +7,12 @@ inThisBuild(
     organization           := "io.github.fun-stack",
     scalaVersion           := "2.13.8",
     licenses               := Seq("MIT License" -> url("https://opensource.org/licenses/MIT")),
-    homepage               := Some(url("https://github.com/fun-stack/fun-stack-local")),
+    homepage               := Some(url("https://github.com/fun-stack/local-env")),
     scmInfo                := Some(
       ScmInfo(
-        url("https://github.com/fun-stack/fun-stack-local"),
-        "scm:git:git@github.com:fun-stack/fun-stack-local.git",
-        Some("scm:git:git@github.com:fun-stack/fun-stack-local.git"),
+        url("https://github.com/fun-stack/local-env"),
+        "scm:git:git@github.com:fun-stack/local-env.git",
+        Some("scm:git:git@github.com:fun-stack/local-env.git"),
       ),
     ),
     pomExtra               :=
@@ -39,7 +39,7 @@ lazy val commonSettings = Seq(
 lazy val jsSettings = Seq(
   useYarn       := true,
   scalacOptions += {
-    val githubRepo    = "fun-stack/fun-stack-local"
+    val githubRepo    = "fun-stack/local-env"
     val local         = baseDirectory.value.toURI
     val subProjectDir = baseDirectory.value.getName
     val remote        = s"https://raw.githubusercontent.com/${githubRepo}/${git.gitHeadCommit.value.get}"
@@ -52,7 +52,7 @@ lazy val cli = project
   .enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin, ScalablyTypedConverterPlugin)
   .settings(commonSettings, jsSettings)
   .settings(
-    name                            := "fun-stack-local",
+    name                            := "fun-local-env",
     scalaJSUseMainModuleInitializer := true,
     webpackConfigFile               := Some(baseDirectory.value / "webpack.config.js"),
     libraryDependencies            ++=
