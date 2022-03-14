@@ -1,5 +1,5 @@
 {
-  "name": "@fun-stack/local-env",
+  "name": "@fun-stack/fun-local-env",
   "version": "0.2.1",
   "description": "Replicate fun-stack infrastructure locally",
   "main": "./bin/fun-local-env.js",

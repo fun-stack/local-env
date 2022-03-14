@@ -16,7 +16,7 @@ SDK library to communicate with the infrastructure in your code:
 ## Install
 
 ```sh
-npm install --global @fun-stack/local-env
+npm install --global @fun-stack/fun-local-env
 ```
 
 ## Usage
