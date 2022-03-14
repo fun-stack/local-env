@@ -2,14 +2,16 @@
 
 Replicate fun-stack infrastructure locally: AWS lambdas with a HTTP/WS Server, local cognito.
 
-See Examples for how to use it:
-- Scala Project Template: [fun-stack-example](https://github.com/fun-stack/fun-stack-example)
+## Links
 
-See terraform module for the corresponding AWS infrastructure:
-- Terraform Module: [terraform-aws-fun](https://github.com/fun-stack/terraform-aws-fun)
+Example on how to use it:
+- Fun Scala Template: [example](https://github.com/fun-stack/example)
 
-See SDK library for scala to communicate with the infrastructure in your code:
-- Scala SDK: [fun-stack-scala](https://github.com/fun-stack/fun-stack-scala)
+Terraform module for the corresponding AWS infrastructure:
+- Fun Terraform Module: [terraform-aws-fun](https://github.com/fun-stack/terraform-aws-fun)
+
+SDK library to communicate with the infrastructure in your code:
+- Fun SDK Scala: [sdk-scala](https://github.com/fun-stack/sdk-scala)
 
 ## Install
 
