@@ -56,6 +56,10 @@ function configuration() {
       }
     },
 
+    rotateRefreshToken(ctx) {
+      return false;
+    },
+
     features: {
       resourceIndicators: {
         enabled: true,
