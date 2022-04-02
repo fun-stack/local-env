@@ -59,7 +59,7 @@ lazy val cli = project
       Deps.cats.core.value ::
         Deps.awsLambdaJS.value ::
         Nil,
-    stIgnore ++= List(
+    stIgnore                       ++= List(
       "oidc-provider",
       "express",
       "bufferutil",
@@ -67,18 +67,18 @@ lazy val cli = project
     ),
     Compile / npmDependencies      ++= Seq(
       /* "@types/oidc-provider" -> "^7.8.2", // TODO: crashes scalablytyped */
-      "express" -> "^4.17.3",
-      "oidc-provider" -> "^7.10.6",
-      "bufferutil" -> "^4.0.6",
+      "express"        -> "^4.17.3",
+      "oidc-provider"  -> "^7.10.6",
+      "bufferutil"     -> "^4.0.6",
       "utf-8-validate" -> "^5.0.9",
-      "@types/node" -> "14.14.31",
-      "ws"          -> "8.2.3",
-      "@types/ws"   -> "8.2.0",
-      "jwt-decode"  -> "^3.1.2",
+      "@types/node"    -> "14.14.31",
+      "ws"             -> "8.2.3",
+      "@types/ws"      -> "8.2.0",
+      "jwt-decode"     -> "^3.1.2",
     ),
-    Compile / npmDevDependencies ++= Seq(
-      "@babel/core" -> "^7.17.5",
+    Compile / npmDevDependencies   ++= Seq(
+      "@babel/core"       -> "^7.17.5",
       "@babel/preset-env" -> "^7.16.11",
-      "babel-loader" -> "^8.2.3",
-    )
+      "babel-loader"      -> "^8.2.3",
+    ),
   )
