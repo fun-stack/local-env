@@ -24,7 +24,7 @@ object DevServer {
 
   def start(port: Int): Server = {
     val requestListener = { (req: IncomingMessage, res: ServerResponse) =>
-      val body = new StringBuilder()
+      val body = new StringBuilder
 
       res.setHeader("Access-Control-Allow-Origin", "*");
       res.setHeader("Access-Control-Request-Method", "*");
@@ -84,7 +84,7 @@ object DevServer {
       .fold(Map.empty[String, String])(
         _.split("&|=")
           .grouped(2)
-          .map(a => (a(0) -> a(1)))
+          .map(a => a(0) -> a(1))
           .toMap,
       )
 
@@ -92,7 +92,7 @@ object DevServer {
     // example json: https://github.com/awsdocs/aws-lambda-developer-guide/blob/main/sample-apps/nodejs-apig/event-v2.json
     // more examples: https://github.com/search?l=JSON&q=pathparameters+requestContext+isbase64encoded&type=Code
     val routeKey = "ANY /nodejs-apig-function-1G3XMPLZXVXYI"
-    val now      = new js.Date()
+    val now      = new js.Date
     val host     = Option(url.getHost()).getOrElse("") // TODO: includes port number, but it shouldn't?
     val path     = s"/latest${url.getPath()}"          // TODO: why latest?
 
