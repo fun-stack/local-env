@@ -33,7 +33,7 @@ private[local] object WebsocketConnections {
   }
 
   def subscribe(connectionId: String, subscriptionKey: String): Unit = {
-    val buf = subscriptions.getOrElseUpdate(subscriptionKey, new mutable.ArrayBuffer())
+    val buf = subscriptions.getOrElseUpdate(subscriptionKey, new mutable.ArrayBuffer)
     buf += connectionId
   }
 
@@ -123,7 +123,7 @@ object DevServer {
 
     val randomRequestId = util.Random.alphanumeric.take(20).mkString
     val randomMessageId = util.Random.alphanumeric.take(20).mkString
-    val now             = new js.Date()
+    val now             = new js.Date
 
     val event = js.Dynamic
       .literal(

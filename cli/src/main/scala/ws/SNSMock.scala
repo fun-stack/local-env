@@ -6,7 +6,7 @@ import scala.scalajs.js
 
 object SNSMock {
   def transform(body: String, userId: Option[String], connectionId: String): (SNSEvent, aws_lambda.Context) = {
-    val now = new js.Date()
+    val now = new js.Date
 
     val messageId = java.util.UUID.randomUUID()
 
