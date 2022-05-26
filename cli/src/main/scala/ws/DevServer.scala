@@ -51,6 +51,7 @@ private[local] object WebsocketConnections {
         case Some(authorizer) =>
           val userId           = users.get(connectionId)
           val (event, context) = SNSMock.transform(body, userId = userId, connectionId = connectionId)
+          println(s"WsEventAuthorizer> authorize event for user '$userId'")
           authorizer(event, context)
       }
     })
@@ -107,7 +108,7 @@ object DevServer {
                   case Success(result) =>
                     ws.send(result.body)
                   case Failure(error)  =>
-                    print("WS> ")
+                    print("Ws> ")
                     error.printStackTrace()
                 })
             }
