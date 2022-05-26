@@ -144,11 +144,7 @@ object Main {
         Either
           .catchNonFatal(requireUncached(pathMod.resolve(config.jsFileName)))
           .left
-          .map { exception =>
-            val sw = new StringWriter
-            exception.printStackTrace(new PrintWriter(sw))
-            s"Error when requiring js file: ${sw.toString}"
-          }
+          .map(exception => s"Error when requiring js file: ${exception}")
       exportedHandler <-
         requiredJs
           .selectDynamic(config.exportName)
