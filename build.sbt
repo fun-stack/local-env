@@ -58,6 +58,7 @@ lazy val cli = project
     libraryDependencies            ++=
       Deps.cats.core.value ::
         Deps.awsLambdaJS.value ::
+        Deps.scalaJS.secureRandom.value ::
         Nil,
     stIgnore                       ++= List(
       "oidc-provider",

@@ -10,5 +10,9 @@ object Deps {
     val core = s("org.typelevel" %%% "cats-core" % "2.7.0")
   }
 
+  val scalaJS = new {
+    val secureRandom = s("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0")
+  }
+
   val awsLambdaJS = s("net.exoego" %%% "aws-lambda-scalajs-facade" % "0.12.1")
 }
