@@ -1,5 +1,9 @@
 package funstack.local.http
 
+import cats.effect.IO
+import cats.effect.std.Semaphore
+import cats.implicits._
+import cats.effect.unsafe.implicits.{global => unsafeIORuntimeGlobal}
 import typings.node.httpMod.createServer
 import typings.node.httpMod.IncomingMessage
 import typings.node.httpMod.ServerResponse
@@ -7,6 +11,7 @@ import typings.node.httpMod.Server
 import typings.node.{Buffer => JsBuffer}
 import net.exoego.facade.aws_lambda.{APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2}
 import net.exoego.facade.aws_lambda
+
 import scala.scalajs.js
 import scala.util.{Failure, Success}
 import java.net.URI
@@ -19,6 +24,8 @@ object DevServer {
 
   var lambdaHandler: Option[FunctionType]           = None
   var lambdaHandlerUnderscore: Option[FunctionType] = None
+
+  val semaphore = Semaphore[IO](1).unsafeToFuture()
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -56,16 +63,23 @@ object DevServer {
               case _                                  => lambdaHandler
             }
 
-            handler.foreach(_(gatewayEvent, lambdaContext).toFuture.onComplete {
-              case Success(result) =>
-                result.statusCode.foreach(res.statusCode = _)
-                res.end(result.body)
-              case Failure(error)  =>
-                res.statusCode = 500 // internal server error
-                print("Http> ")
-                error.printStackTrace()
-                res.end()
-            })
+            handler.foreach { handler =>
+              for {
+                semaphore <- semaphore
+                _         <- semaphore.acquire.unsafeToFuture()
+                result    <- handler(gatewayEvent, lambdaContext).toFuture.attempt
+                _         <- semaphore.release.unsafeToFuture()
+              } yield result match {
+                case Right(result) =>
+                  result.statusCode.foreach(res.statusCode = _)
+                  res.end(result.body)
+                case Left(error)   =>
+                  res.statusCode = 500 // internal server error
+                  print("Http> ")
+                  error.printStackTrace()
+                  res.end()
+              }
+            }
           },
       )
 
