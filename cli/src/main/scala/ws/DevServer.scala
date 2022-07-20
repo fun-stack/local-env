@@ -1,10 +1,14 @@
 package funstack.local.ws
 
+import cats.effect.IO
+import cats.effect.std.Semaphore
+import cats.effect.unsafe.implicits.{global => unsafeIORuntimeGlobal}
 import net.exoego.facade.aws_lambda.APIGatewayProxyStructuredResultV2
 import net.exoego.facade.aws_lambda
 import typings.ws.mod.WebSocketServer
 import typings.ws.mod.ServerOptions
 import typings.ws.wsStrings
+
 import scala.scalajs.js
 import scala.util.{Failure, Success}
 import cats.implicits._
@@ -64,6 +68,8 @@ object DevServer {
 
   var lambdaHandler: Option[FunctionType] = None
 
+  val semaphore = Semaphore[IO](1).unsafeToFuture()
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   def start(port: Int): WebSocketServer = {
@@ -104,13 +110,20 @@ object DevServer {
                 // call lambda
                 println("Ws> new message")
                 val (event, context) = transform(body, authorizer, connectionId)
-                lambdaHandler.foreach(_(event, context).toFuture.onComplete {
-                  case Success(result) =>
-                    ws.send(result.body)
-                  case Failure(error)  =>
-                    print("Ws> ")
-                    error.printStackTrace()
-                })
+                lambdaHandler.foreach { handler =>
+                  for {
+                    semaphore <- semaphore
+                    _         <- semaphore.acquire.unsafeToFuture()
+                    result    <- handler(event, context).toFuture.attempt
+                    _         <- semaphore.release.unsafeToFuture()
+                  } yield result match {
+                    case Right(result) =>
+                      ws.send(result.body)
+                    case Left(error)   =>
+                      print("Ws> ")
+                      error.printStackTrace()
+                  }
+                }
             }
           },
         )

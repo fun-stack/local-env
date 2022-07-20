@@ -57,6 +57,8 @@ lazy val cli = project
     webpackConfigFile               := Some(baseDirectory.value / "webpack.config.js"),
     libraryDependencies            ++=
       Deps.cats.core.value ::
+        Deps.cats.effect.value ::
+        Deps.cats.alley.value ::
         Deps.awsLambdaJS.value ::
         Deps.scalaJS.secureRandom.value ::
         Nil,
