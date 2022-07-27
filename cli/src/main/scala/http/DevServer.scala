@@ -56,8 +56,6 @@ object DevServer {
             val bodyStr                       = body.result()
             val (gatewayEvent, lambdaContext) = transform(s"http://localhost:$port", req, bodyStr)
 
-            println("Http> new request")
-
             val handler = req.url.toOption match {
               case Some(url) if url.startsWith("/_/") => lambdaHandlerUnderscore
               case _                                  => lambdaHandler

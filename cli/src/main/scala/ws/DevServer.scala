@@ -108,7 +108,6 @@ object DevServer {
               case Some("unsubscribe") => WebsocketConnections.unsubscribe(connectionId, json.get.subscription_key.asInstanceOf[String])
               case _                   =>
                 // call lambda
-                println("Ws> new message")
                 val (event, context) = transform(body, authorizer, connectionId)
                 lambdaHandler.foreach { handler =>
                   for {
