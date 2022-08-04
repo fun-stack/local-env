@@ -94,7 +94,7 @@ object Main {
       }
       catch {
         case error: Throwable if error.getMessage().startsWith("Error: ENOENT: no such file or directory") =>
-          retry("File not found.")
+          retry("Compiled js file does not exist yet.")
         case error: Throwable                                                                              =>
           error.printStackTrace()
       }
