@@ -6,6 +6,7 @@ import typings.node.pathMod
 import typings.node.processMod.global.process
 
 import scala.scalajs.js
+import scala.scalajs.js.|
 import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.timers
 import java.io.PrintWriter
@@ -152,16 +153,29 @@ object Main {
           .toRight(s"Cannot access export '${config.exportName}'")
     } yield config match {
       case _: Config.HttpApi           =>
-        val function = exportedHandler.asInstanceOf[http.DevServer.FunctionType]
+        val function = logWrapper(config.mode, exportedHandler.asInstanceOf[http.DevServer.FunctionType])
         http.DevServer.lambdaHandler = Some(function)
       case _: Config.HttpRpc           =>
-        val function = exportedHandler.asInstanceOf[http.DevServer.FunctionType]
+        val function = logWrapper(config.mode, exportedHandler.asInstanceOf[http.DevServer.FunctionType])
         http.DevServer.lambdaHandlerUnderscore = Some(function)
       case _: Config.WsRpc             =>
-        val function = exportedHandler.asInstanceOf[ws.DevServer.FunctionType]
+        val function = logWrapper(config.mode, exportedHandler.asInstanceOf[ws.DevServer.FunctionType])
         ws.DevServer.lambdaHandler = Some(function)
       case _: Config.WsEventAuthorizer =>
-        val function = exportedHandler.asInstanceOf[ws.WebsocketConnections.AuthFunctionType]
+        val function = logWrapper(config.mode, exportedHandler.asInstanceOf[ws.WebsocketConnections.AuthFunctionType])
         ws.WebsocketConnections.eventAuthorizer = Some(function)
     }
+
+  def logWrapper[A, B, R](mode: String, function: js.Function2[A, B, js.Promise[R]]): js.Function2[A, B, js.Promise[R]] = { (a, b) =>
+    Either.catchNonFatal(function(a, b)) match {
+      case Right(r) =>
+        r.`catch`[R]({ (error: Any) =>
+          println(s"${mode}> Error in function promise: $error")
+          js.Promise.reject(error)
+        }: js.Function1[Any, js.Thenable[R]])
+      case Left(e)  =>
+        println(s"${mode}> Error in function: $e")
+        throw e
+    }
+  }
 }
