@@ -41,8 +41,8 @@ function configuration() {
       client_id: 'fun',
       client_secret: 'stack',
       token_endpoint_auth_method: 'none',
-      redirect_uris: ['http://localhost:12345'],
-      post_logout_redirect_uris: ['http://localhost:12345?logout'],
+      redirect_uris: ['http://localhost'],
+      post_logout_redirect_uris: ['http://localhost'],
       scope: clientScope
     }],
 
@@ -134,6 +134,10 @@ function configuration() {
 
 function start(port) {
   const oidc = new Provider(`http://localhost:${port}`, configuration());
+
+  // allow all redirect_uris
+  oidc.Client.prototype.postLogoutRedirectUriAllowed = function() { return true; };
+  oidc.Client.prototype.redirectUriAllowed = function() { return true; };
 
   const app = express();
 
