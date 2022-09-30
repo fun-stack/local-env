@@ -3,16 +3,14 @@ package funstack.local.ws
 import cats.effect.IO
 import cats.effect.std.Semaphore
 import cats.effect.unsafe.implicits.{global => unsafeIORuntimeGlobal}
-import net.exoego.facade.aws_lambda.APIGatewayProxyStructuredResultV2
+import cats.implicits._
+import funstack.local.helper.AccessToken
 import net.exoego.facade.aws_lambda
-import typings.ws.mod.WebSocketServer
-import typings.ws.mod.ServerOptions
+import net.exoego.facade.aws_lambda.APIGatewayProxyStructuredResultV2
+import typings.ws.mod.{ServerOptions, WebSocketServer}
 import typings.ws.wsStrings
 
 import scala.scalajs.js
-import scala.util.{Failure, Success}
-import cats.implicits._
-import funstack.local.helper.AccessToken
 
 private[local] object WebsocketConnections {
   import scala.collection.mutable

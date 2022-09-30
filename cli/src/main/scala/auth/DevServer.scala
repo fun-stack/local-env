@@ -2,7 +2,6 @@ package funstack.local.auth
 
 import scala.scalajs.js
 import scala.scalajs.js.annotation.JSImport
-import scala.scalajs.js.JSConverters._
 
 @js.native
 @JSImport("./oidc-server", JSImport.Namespace)
@@ -15,7 +14,6 @@ object AuthMock {
 }
 
 object DevServer {
-  import js.Dynamic.{global => g}
 
   def start(port: Int): Unit = OidcServer.start(port)
 }

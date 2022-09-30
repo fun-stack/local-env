@@ -2,21 +2,17 @@ package funstack.local.http
 
 import cats.effect.IO
 import cats.effect.std.Semaphore
-import cats.implicits._
 import cats.effect.unsafe.implicits.{global => unsafeIORuntimeGlobal}
-import typings.node.httpMod.createServer
-import typings.node.httpMod.IncomingMessage
-import typings.node.httpMod.ServerResponse
-import typings.node.httpMod.Server
-import typings.node.{Buffer => JsBuffer}
-import net.exoego.facade.aws_lambda.{APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2}
-import net.exoego.facade.aws_lambda
-
-import scala.scalajs.js
-import scala.util.{Failure, Success}
-import java.net.URI
-import js.JSConverters._
+import cats.implicits._
 import funstack.local.helper.AccessToken
+import net.exoego.facade.aws_lambda
+import net.exoego.facade.aws_lambda.{APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2}
+import typings.node.httpMod.{createServer, IncomingMessage, Server, ServerResponse}
+import typings.node.{Buffer => JsBuffer}
+
+import java.net.URI
+import scala.scalajs.js
+import scala.scalajs.js.JSConverters._
 
 object DevServer {
   type FunctionType =

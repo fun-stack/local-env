@@ -1,8 +1,9 @@
 //TODO: copied from fun-stack-scala. We should just use the real facade here instead.
 package funstack.local.ws
 
-import scala.scalajs.js
 import net.exoego.facade.aws_lambda._
+
+import scala.scalajs.js
 
 @js.native
 trait APIGatewayWSRequestContext extends js.Object {

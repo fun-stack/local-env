@@ -1,7 +1,8 @@
 package funstack.local.ws
 
-import net.exoego.facade.aws_lambda._
 import net.exoego.facade.aws_lambda
+import net.exoego.facade.aws_lambda._
+
 import scala.scalajs.js
 
 object SNSMock {

@@ -1,7 +1,7 @@
 package funstack.local.helper
 
-import typings.jwtDecode.mod.{default => jwt_decode}
-import typings.jwtDecode.mod.JwtPayload
+import typings.jwtDecode.mod.{default => jwt_decode, JwtPayload}
+
 import scala.scalajs.js
 
 object AccessToken {

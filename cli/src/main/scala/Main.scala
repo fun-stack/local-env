@@ -1,16 +1,12 @@
 package funstack.local
 
 import cats.implicits._
-import typings.node.fsMod
-import typings.node.pathMod
 import typings.node.processMod.global.process
+import typings.node.{fsMod, pathMod}
 
 import scala.scalajs.js
-import scala.scalajs.js.|
 import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.timers
-import java.io.PrintWriter
-import java.io.StringWriter
 
 object Main {
 
