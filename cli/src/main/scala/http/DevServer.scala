@@ -23,7 +23,7 @@ object DevServer {
 
   val semaphore = Semaphore[IO](1).unsafeToFuture()
 
-  import scala.concurrent.ExecutionContext.Implicits.global
+  import org.scalajs.macrotaskexecutor.MacrotaskExecutor.Implicits._
 
   def start(port: Int): Server = {
     val requestListener = { (req: IncomingMessage, res: ServerResponse) =>
