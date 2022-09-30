@@ -153,7 +153,7 @@ function start(port) {
           query: Object.assign({scope: clientScope, resource: resourceUri}, req.query || {})
         });
         res.redirect(newUrl);
-      } else if (req.method === 'GET' && (req.path === '/login' || req.path === '/signup')) {
+      } else if (req.method === 'GET' && (req.path === '/login' || req.path === '/signup' || req.path === '/authorize')) {
         //TODO: signup?
         const newUrl = url.format({
           protocol: 'http',
