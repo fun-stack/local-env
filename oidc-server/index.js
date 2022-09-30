@@ -3,14 +3,14 @@ const url = require('url');
 const express = require('express');
 const {Provider} = require('oidc-provider');
 
-const clientScope = 'email profile openid api';
+const clientScope = 'email profile openid user/api';
 const resourceUri = 'urn:fun:stack';
 
 // https://github.com/panva/node-oidc-provider/tree/main/docs
 function configuration() {
   return {
     claims: {
-      api: [],
+      "user/api": [],
       address: ['address'],
       email: ['email', 'email_verified'],
       phone: ['phone_number', 'phone_number_verified'],
