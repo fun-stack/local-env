@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.effect.std.Semaphore
 import cats.effect.unsafe.implicits.{global => unsafeIORuntimeGlobal}
 import cats.implicits._
-import funstack.local.helper.AccessToken
+import funstack.local.helper.{AccessToken, Base64Codec}
 import net.exoego.facade.aws_lambda
 import net.exoego.facade.aws_lambda.APIGatewayProxyStructuredResultV2
 import typings.ws.mod.{ServerOptions, WebSocketServer}
@@ -115,7 +115,11 @@ object DevServer {
                     _         <- semaphore.release.unsafeToFuture()
                   } yield result match {
                     case Right(result) =>
-                      ws.send(result.body)
+                      val body = result.body.map { body =>
+                        if (result.isBase64Encoded.getOrElse(false)) Base64Codec.decode(body) else body
+                      }
+
+                      ws.send(body)
                     case Left(error)   =>
                       print("Ws> ")
                       error.printStackTrace()
