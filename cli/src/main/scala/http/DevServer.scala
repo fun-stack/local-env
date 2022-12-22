@@ -5,6 +5,7 @@ import cats.effect.std.Semaphore
 import cats.effect.unsafe.implicits.{global => unsafeIORuntimeGlobal}
 import cats.implicits._
 import funstack.local.helper.{AccessToken, Base64Codec}
+import funstack.local.ws.WebsocketConnections
 import net.exoego.facade.aws_lambda
 import net.exoego.facade.aws_lambda.{APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2}
 import typings.node.httpMod.{createServer, IncomingMessage, Server, ServerResponse}
@@ -48,6 +49,29 @@ object DevServer {
         _ =>
           if (req.method.exists(_ == "OPTIONS")) { // catch preflight requests
             res.end()
+          }
+          else if (req.url.toOption.exists(_.startsWith("/__/"))) {
+            req.url.toOption match {
+              case Some("/__/send/event") =>
+                try {
+                  val bodyStr         = body.result()
+                  val request         = js.JSON.parse(bodyStr)
+                  val subscriptionKey = request.MessageAttributes.subscription_key.Value.asInstanceOf[String]
+                  val message         = request.Message.asInstanceOf[String]
+                  WebsocketConnections.sendSubscription(subscriptionKey, message)
+                  res.statusCode = 200
+                  res.end()
+                }
+                catch {
+                  case error: Throwable =>
+                    res.statusCode = 500 // internal server error
+                    println(s"Http> Error sending subscription: ${error}")
+                    res.end()
+                }
+              case _                      =>
+                res.statusCode = 404 // not found
+                res.end()
+            }
           }
           else {
             val bodyStr                       = body.result()
