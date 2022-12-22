@@ -11,6 +11,7 @@ import typings.node.httpMod.{createServer, IncomingMessage, Server, ServerRespon
 import typings.node.{Buffer => JsBuffer}
 
 import java.net.URI
+import scala.concurrent.Future
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 
@@ -57,33 +58,39 @@ object DevServer {
               case _                                  => lambdaHandler
             }
 
-            handler.foreach { handler =>
-              for {
-                semaphore <- semaphore
-                _         <- semaphore.acquire.unsafeToFuture()
-                result    <- handler(gatewayEvent, lambdaContext).toFuture.attempt
-                _         <- semaphore.release.unsafeToFuture()
-              } yield result match {
-                case Right(result) =>
-                  result.headers.foreach { headers =>
-                    headers.foreach { case (key, value) =>
-                      res.setHeader(key, value.toString)
+            handler match {
+              case Some(handler) =>
+                for {
+                  semaphore <- semaphore
+                  _         <- semaphore.acquire.unsafeToFuture()
+                  result    <- handler(gatewayEvent, lambdaContext).toFuture.attempt
+                  _         <- semaphore.release.unsafeToFuture()
+                } yield result match {
+                  case Right(result) =>
+                    result.headers.foreach { headers =>
+                      headers.foreach { case (key, value) =>
+                        res.setHeader(key, value.toString)
+                      }
                     }
-                  }
-                  result.statusCode.foreach(res.statusCode = _)
+                    result.statusCode.foreach(res.statusCode = _)
 
-                  val body = result.body.map { body =>
-                    if (result.isBase64Encoded.getOrElse(false)) Base64Codec.decode(body) else body
-                  }
+                    val body = result.body.map { body =>
+                      if (result.isBase64Encoded.getOrElse(false)) Base64Codec.decode(body) else body
+                    }
 
-                  res.end(body)
-                case Left(error)   =>
-                  res.statusCode = 500 // internal server error
-                  print("Http> ")
-                  error.printStackTrace()
-                  res.end()
-              }
+                    res.end(body)
+                  case Left(error)   =>
+                    res.statusCode = 500 // internal server error
+                    print("Http> ")
+                    error.printStackTrace()
+                    res.end()
+                }
+              case None          =>
+                res.statusCode = 404 // not found
+                res.end()
             }
+
+            ()
           },
       )
 
