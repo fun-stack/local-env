@@ -8,7 +8,7 @@ object Deps {
 
   val cats = new {
     val core   = s("org.typelevel" %%% "cats-core" % "2.8.0")
-    val effect = s("org.typelevel" %%% "cats-effect" % "3.3.14")
+    val effect = s("org.typelevel" %%% "cats-effect" % "3.4.2")
     val alley  = s("org.typelevel" %%% "alleycats-core" % "2.8.0")
   }
 
