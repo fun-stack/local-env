@@ -82,7 +82,7 @@ jobs:
           echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u USERNAME --password-stdin
           docker buildx build \
             --platform linux/arm64,linux/amd64 \
-            --tag ghcr.io/fun-stack/local-env:$(npm pkg get version | tr -d '"') \
+            --tag ghcr.io/fun-stack/local-env:$(cd npm && npm pkg get version | tr -d '"') \
             --label "org.opencontainers.image.source=https://github.com/fun-stack/local-env" \
             --label "org.opencontainers.image.licenses=MIT" \
             --push \
