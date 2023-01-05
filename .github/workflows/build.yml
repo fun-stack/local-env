@@ -63,13 +63,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-scalablytyped-
 
+      # https://github.com/docker/setup-qemu-action
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
 
-
+      # https://github.com/docker/setup-buildx-action
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
 
       - run: sbt test
 
+      - run: ./publish.sh
+
       - if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/v')
-        run: ./publish.sh
+        name: Build and Publish Docker Images
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u USERNAME --password-stdin
+          docker buildx build \
+            --platform linux/arm64,linux/amd64 \
+            --tag ghcr.io/fun-stack/local-env:$(npm pkg get version | tr -d '"') \
+            --label "org.opencontainers.image.source=https://github.com/fun-stack/local-env" \
+            --label "org.opencontainers.image.licenses=MIT" \
+            --push \
+            .
 
       - if: github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/v')
         uses: JS-DevTools/npm-publish@v1
