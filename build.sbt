@@ -23,8 +23,6 @@ inThisBuild(
         <url>https://github.com/cornerman</url>
       </developer>
     </developers>,
-    sonatypeCredentialHost := "s01.oss.sonatype.org",
-    sonatypeRepository     := "https://s01.oss.sonatype.org/service/local",
   ),
 )
 
@@ -80,8 +78,9 @@ lazy val cli = project
       "jwt-decode"     -> "^3.1.2",
     ),
     Compile / npmDevDependencies   ++= Seq(
-      "@babel/core"       -> "^7.17.5",
-      "@babel/preset-env" -> "^7.16.11",
-      "babel-loader"      -> "^8.2.3",
+      "@fun-stack/fun-pack" -> "0.3.4",
+      "@babel/core"         -> "^7.17.5",
+      "@babel/preset-env"   -> "^7.16.11",
+      "babel-loader"        -> "^8.2.3",
     ),
   )

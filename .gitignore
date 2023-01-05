@@ -2,3 +2,4 @@ target/
 .metals/
 project/metals.sbt
 .bloop/
+project/plugins.sbt
