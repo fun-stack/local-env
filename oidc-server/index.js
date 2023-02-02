@@ -49,11 +49,13 @@ function configuration() {
     conformIdTokenClaims: false,
 
     extraTokenClaims(ctx, token) {
-      return {
+      const groups = token.accountId.split('+').slice(1);
+      const groupClaims = groups.length > 0 ? { "cognito:groups": groups } : {};
+
+      return Object.assign({
         "sub": token.accountId,
-        "username": token.accountId,
-        "cognito:groups": []
-      }
+        "username": token.accountId
+      }, groupClaims);
     },
 
     rotateRefreshToken(ctx) {
@@ -117,12 +119,11 @@ function configuration() {
 
     async findAccount(ctx, id) {
       const groups = id.split('+').slice(1);
+      const groupClaims = groups.length > 0 ? { "cognito:groups": groups } : {};
 
       return {
         accountId: id,
-        // account: id,
         async claims(use, scope) {
-          const groupClaims = groups.length > 0 ? { "cognito:groups": groups } : {};
           return Object.assign({
             sub: id,
             "cognito:username": id,
