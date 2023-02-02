@@ -116,16 +116,19 @@ function configuration() {
     },
 
     async findAccount(ctx, id) {
+      const groups = id.split('+').slice(1);
+
       return {
         accountId: id,
         // account: id,
         async claims(use, scope) {
-          return {
+          const groupClaims = groups.length > 0 ? { "cognito:groups": groups } : {};
+          return Object.assign({
             sub: id,
             "cognito:username": id,
             email: `${id}@localhost`,
             email_verified: true
-          };
+          }, groupClaims);
         },
       };
     }
