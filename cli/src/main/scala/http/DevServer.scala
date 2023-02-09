@@ -93,7 +93,14 @@ object DevServer {
                   case Right(result) =>
                     result.headers.foreach { headers =>
                       headers.foreach { case (key, value) =>
-                        res.setHeader(key, value.toString)
+                        // ignore content-length header. the content-length we
+                        // get here can be wrong when it comes from, e.g.,
+                        // tapir-based lambda functions and using umlauts in
+                        // the payload. The node-http-server will add a correct
+                        // one anyhow if it is not added.
+                        if (key != "Content-Length") {
+                          res.setHeader(key, value.toString)
+                        }
                       }
                     }
                     result.statusCode.foreach(res.statusCode = _)
