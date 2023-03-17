@@ -15,7 +15,7 @@ function configuration() {
       email: ['email', 'email_verified'],
       phone: ['phone_number', 'phone_number_verified'],
       profile: ['birthdate', 'family_name', 'gender', 'given_name', 'locale', 'middle_name', 'name',
-        'nickname', 'picture', 'preferred_username', 'profile', 'updated_at', 'website', 'zoneinfo', 'cognito:username']
+        'nickname', 'picture', 'preferred_username', 'profile', 'updated_at', 'website', 'zoneinfo', 'cognito:username', 'cognito:groups']
     },
 
     // copy cognito structure https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-userpools-server-contract-reference.html
@@ -49,12 +49,14 @@ function configuration() {
     conformIdTokenClaims: false,
 
     extraTokenClaims(ctx, token) {
-      const groups = token.accountId.split('+').slice(1);
+      const id = token.accountId;
+      const idSplit = id.split('+');
+      const groups = idSplit.slice(1)
       const groupClaims = groups.length > 0 ? { "cognito:groups": groups } : {};
 
       return Object.assign({
-        "sub": token.accountId,
-        "username": token.accountId
+        sub: id,
+        username: id,
       }, groupClaims);
     },
 
@@ -118,7 +120,8 @@ function configuration() {
     },
 
     async findAccount(ctx, id) {
-      const groups = id.split('+').slice(1);
+      const idSplit = id.split('+');
+      const groups = idSplit.slice(1);
       const groupClaims = groups.length > 0 ? { "cognito:groups": groups } : {};
 
       return {
