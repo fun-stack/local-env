@@ -17,6 +17,7 @@ import scala.concurrent.Future
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 import scala.util.{Failure, Success}
+import org.scalajs.dom.console
 
 object DevServer {
   type FunctionType =
@@ -57,7 +58,9 @@ object DevServer {
               case Some("/__/send/event") =>
                 try {
                   val bodyStr = body.result()
+                  console.log("Http> Received send event: " + bodyStr)
                   val request = js.JSON.parse(bodyStr)
+                  console.log(request)
 
                   val subscribeUrl = request.SubscribeURL.asInstanceOf[js.UndefOr[String]].toOption
 
@@ -68,6 +71,7 @@ object DevServer {
                         else Future.failed(new Exception(s"Unexpected status code from subscribe url: ${response.status}"))
                       }
                     case None      =>
+                      console.log("Http> Sending subscription to websocket")
                       val subscriptionKey = request.MessageAttributes.subscription_key.Value.asInstanceOf[String]
                       val message         = request.Message.asInstanceOf[String]
                       WebsocketConnections.sendSubscription(subscriptionKey, message)

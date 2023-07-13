@@ -11,6 +11,7 @@ import typings.ws.mod.{ServerOptions, WebSocketServer}
 import typings.ws.wsStrings
 
 import scala.scalajs.js
+import org.scalajs.dom.console
 
 private[local] object WebsocketConnections {
   import scala.collection.mutable
@@ -44,19 +45,25 @@ private[local] object WebsocketConnections {
       buf -= connectionId
     }
 
-  def sendSubscription(subscriptionKey: String, body: String): Unit = subscriptions
-    .get(subscriptionKey)
-    .foreach(_.foreach { connectionId =>
-      eventAuthorizer match {
-        case None             =>
-          sendConnection(connectionId, body)
-        case Some(authorizer) =>
-          val userId           = users.get(connectionId)
-          val (event, context) = SNSMock.transform(body, userId = userId, connectionId = connectionId)
-          println(s"WsEventAuthorizer> authorize event for user '$userId'")
-          authorizer(event, context)
+  def sendSubscription(subscriptionKey: String, body: String): Unit = {
+    console.log("subsciptionKey: " + subscriptionKey + ", subscriptionMap: " + subscriptions)
+    subscriptions
+      .get(subscriptionKey)
+      .foreach { connections =>
+        console.log("  connections: " + connections)
+        connections.foreach { connectionId =>
+          eventAuthorizer match {
+            case None             =>
+              sendConnection(connectionId, body)
+            case Some(authorizer) =>
+              val userId           = users.get(connectionId)
+              val (event, context) = SNSMock.transform(body, userId = userId, connectionId = connectionId)
+              println(s"WsEventAuthorizer> authorize event for user '$userId'")
+              authorizer(event, context)
+          }
+        }
       }
-    })
+  }
 
   def sendConnection(connectionId: String, body: String): Unit = connections.get(connectionId).foreach(_(body))
 }
