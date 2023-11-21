@@ -23,9 +23,15 @@ object ParseResult {
 
 sealed trait Config
 object Config {
-  case class Http(port: Option[Int]) extends Config
-  case class Ws(port: Option[Int])   extends Config
-  case class Auth(port: Option[Int]) extends Config
+  case class Http(port: Option[Int]) extends Config {
+    def portOrDefault = port.getOrElse(8080)
+  }
+  case class Ws(port: Option[Int])   extends Config {
+    def portOrDefault = port.getOrElse(8081)
+  }
+  case class Auth(port: Option[Int]) extends Config {
+    def portOrDefault = port.getOrElse(8082)
+  }
 
   sealed trait Handler extends Config {
     def mode: String

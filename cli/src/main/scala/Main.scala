@@ -15,15 +15,16 @@ object Main {
       case _: Config.Ws => true
       case _            => false
     }
-    val hasAuth = configs.exists {
-      case _: Config.Auth => true
-      case _              => false
+    val authUrl = configs.collectFirst { case auth: Config.Auth =>
+      s"http://localhost:${auth.portOrDefault}"
     }
+    val hasAuth = authUrl.isDefined
 
     js.Dynamic.global.global.fun_dev_environment = js.Dynamic.literal(
       sendSubscription = Option.when(hasWs)(ws.WebsocketConnections.sendSubscription: js.Function2[String, String, Unit]).orUndefined,
       sendConnection = Option.when(hasWs)(ws.WebsocketConnections.sendConnection: js.Function2[String, String, Unit]).orUndefined,
       getEmail = Option.when(hasAuth)(auth.AuthMock.getEmailForUser: js.Function1[String, String]).orUndefined,
+      authUrl = authUrl.orUndefined,
     )
   }
 
@@ -117,17 +118,17 @@ object Main {
   def initialize(config: Config): Unit =
     config match {
       case config: Config.Http =>
-        val port = config.port.getOrElse(8080)
+        val port = config.portOrDefault
         println(s"Http> Starting Http server on port $port")
         http.DevServer.start(port = port)
         ()
       case config: Config.Ws   =>
-        val port = config.port.getOrElse(8081)
+        val port = config.portOrDefault
         println(s"Ws> Starting Ws server on port $port")
         ws.DevServer.start(port = port)
         ()
       case config: Config.Auth =>
-        val port = config.port.getOrElse(8082)
+        val port = config.portOrDefault
         println(s"Auth> Starting Auth server on port $port")
         auth.DevServer.start(port = port)
         ()
