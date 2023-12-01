@@ -68,6 +68,9 @@ lazy val cli = project
       "bufferutil",
       "utf-8-validate",
     ),
+    Compile / yarnExtraArgs ++= Seq(
+      "--ignore-engines"
+    ),
     Compile / npmDependencies      ++= Seq(
       /* "@types/oidc-provider" -> "^7.8.2", // TODO: crashes scalablytyped */
       "express"        -> "^4.17.3",
