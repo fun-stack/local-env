@@ -6,7 +6,7 @@ import typings.node.{fsMod, pathMod}
 
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
-import scala.scalajs.js.timers
+import scala.scalajs.js.{|, timers}
 
 object Main {
 
@@ -57,6 +57,10 @@ object Main {
     var watcher: Option[fsMod.FSWatcher]             = None
     var lastTimeout: Option[timers.SetTimeoutHandle] = None
 
+    val jsFilePath     = pathMod.parse(config.jsFileName)
+    val jsFileName     = jsFilePath.base
+    val jsParentFolder = jsFilePath.dir
+
     def run(): Unit =
       setHandler(config) match {
         case Right(())   => ()
@@ -74,11 +78,16 @@ object Main {
 
       try {
         val w: fsMod.FSWatcher = fsMod.watch(
-          filename = config.jsFileName,
-          listener = { (_, _) =>
-            println(s"${config.mode}> File changed, resetting...")
-            run()
-            watch() // since the file might have been deleted, reinitialize the watcher
+          filename = jsParentFolder,
+          listener = { (event, filename) =>
+            println(s"watcher triggered. event: $event, filename: ${filename}")
+            val parsedFilePath = pathMod.parse(filename)
+            val parsedFilename = parsedFilePath.base
+            if(parsedFilename == jsFileName) {
+              println(s"${config.mode}> File changed, resetting...")
+              run()
+              watch() // since the file might have been deleted, reinitialize the watcher
+            }
           },
         )
 
@@ -142,7 +151,7 @@ object Main {
         Either
           .catchNonFatal(requireUncached(pathMod.resolve(config.jsFileName)))
           .left
-          .map(exception => s"Error when requiring js file: ${exception}")
+          .map(exception => s"Error when requiring js file: $exception")
       exportedHandler <-
         requiredJs
           .selectDynamic(config.exportName)
@@ -167,11 +176,11 @@ object Main {
     Either.catchNonFatal(function(a, b)) match {
       case Right(r) =>
         r.`catch`[R]({ (error: Any) =>
-          println(s"${mode}> Error in function promise: $error")
+          println(s"$mode> Error in function promise: $error")
           js.Promise.reject(error)
         }: js.Function1[Any, js.Thenable[R]])
       case Left(e)  =>
-        println(s"${mode}> Error in function: $e")
+        println(s"$mode> Error in function: $e")
         throw e
     }
   }
