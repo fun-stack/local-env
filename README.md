@@ -56,3 +56,10 @@ npm version patch
 git push
 git push --tags
 ```
+
+## Caveats
+
+If you're using a node-version that's too new (>16.x), you might need to set this env-var if you get errors bundling the app. 
+```sh 
+export NODE_OPTIONS=--openssl-legacy-provider
+```
