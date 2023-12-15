@@ -80,7 +80,7 @@ object Main {
         val w: fsMod.FSWatcher = fsMod.watch(
           filename = jsParentFolder,
           listener = { (event, filename) =>
-            println(s"watcher triggered. event: $event, filename: ${filename}")
+            println(s"${config.mode}> File watcher triggered. Event: ${event}, Filename: ${filename}")
             val parsedFilePath = pathMod.parse(filename)
             val parsedFilename = parsedFilePath.base
             if(parsedFilename == jsFileName) {
