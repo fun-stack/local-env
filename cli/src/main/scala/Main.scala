@@ -6,7 +6,7 @@ import typings.node.{fsMod, pathMod}
 
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
-import scala.scalajs.js.{|, timers}
+import scala.scalajs.js.timers
 
 object Main {
 
@@ -54,24 +54,29 @@ object Main {
   }
 
   def watch(config: Config.Handler): Unit = {
-    var watcher: Option[fsMod.FSWatcher]             = None
-    var lastTimeout: Option[timers.SetTimeoutHandle] = None
+    var watcher: Option[fsMod.FSWatcher]                  = None
+    var lastTimeoutRun: Option[timers.SetTimeoutHandle]   = None
+    var lastTimeoutWatch: Option[timers.SetTimeoutHandle] = None
 
     val jsFilePath     = pathMod.parse(config.jsFileName)
     val jsFileName     = jsFilePath.base
     val jsParentFolder = jsFilePath.dir
 
-    def run(): Unit =
+    def run(): Unit = {
+      lastTimeoutRun.foreach(timers.clearTimeout)
+      lastTimeoutRun = None
+
       setHandler(config) match {
         case Right(())   => ()
         case Left(error) =>
           println(s"${config.mode}> Error: $error")
           retry()
       }
+    }
 
     def watch(): Unit = {
-      lastTimeout.foreach(timers.clearTimeout)
-      lastTimeout = None
+      lastTimeoutWatch.foreach(timers.clearTimeout)
+      lastTimeoutWatch = None
 
       watcher.foreach(_.close())
       watcher = None
@@ -83,10 +88,13 @@ object Main {
             println(s"${config.mode}> File watcher triggered. Event: ${event}, Filename: ${filename}")
             val parsedFilePath = pathMod.parse(filename)
             val parsedFilename = parsedFilePath.base
-            if(parsedFilename == jsFileName) {
+            if (parsedFilename == jsFileName) {
               println(s"${config.mode}> File changed, resetting...")
-              run()
-              watch() // since the file might have been deleted, reinitialize the watcher
+              lastTimeoutRun.foreach(timers.clearTimeout)
+              lastTimeoutRun = Some(timers.setTimeout(1000) {
+                run()
+                watch() // since the file might have been deleted, reinitialize the watcher
+              })
             }
           },
         )
@@ -109,8 +117,8 @@ object Main {
 
     def retry(msg: String = ""): Unit = {
       println(s"${if (msg.nonEmpty) s"$msg " else ""}Retrying...")
-      lastTimeout.foreach(timers.clearTimeout)
-      lastTimeout = Some(timers.setTimeout(2000)(watch()))
+      lastTimeoutWatch.foreach(timers.clearTimeout)
+      lastTimeoutWatch = Some(timers.setTimeout(2000)(watch()))
     }
 
     watch()
