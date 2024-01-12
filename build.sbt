@@ -5,7 +5,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 inThisBuild(
   Seq(
     organization           := "io.github.fun-stack",
-    scalaVersion           := "2.13.10",
+    scalaVersion           := "2.13.12",
     licenses               := Seq("MIT License" -> url("https://opensource.org/licenses/MIT")),
     homepage               := Some(url("https://github.com/fun-stack/local-env")),
     scmInfo                := Some(
@@ -68,8 +68,8 @@ lazy val cli = project
       "bufferutil",
       "utf-8-validate",
     ),
-    Compile / yarnExtraArgs ++= Seq(
-      "--ignore-engines"
+    Compile / yarnExtraArgs        ++= Seq(
+      "--ignore-engines",
     ),
     Compile / npmDependencies      ++= Seq(
       /* "@types/oidc-provider" -> "^7.8.2", // TODO: crashes scalablytyped */
