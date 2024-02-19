@@ -4,7 +4,7 @@ import sbt._
 object Deps {
   import Def.{setting => s}
 
-  val scalatest = s("org.scalatest" %%% "scalatest" % "3.2.17")
+  val scalatest = s("org.scalatest" %%% "scalatest" % "3.2.18")
 
   val cats = new {
     val core   = s("org.typelevel" %%% "cats-core" % "2.10.0")
