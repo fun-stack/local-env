@@ -5,7 +5,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 inThisBuild(
   Seq(
     organization           := "io.github.fun-stack",
-    scalaVersion           := "2.13.12",
+    scalaVersion           := "2.13.13",
     licenses               := Seq("MIT License" -> url("https://opensource.org/licenses/MIT")),
     homepage               := Some(url("https://github.com/fun-stack/local-env")),
     scmInfo                := Some(
