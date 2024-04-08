@@ -5,7 +5,7 @@ addSbtPlugin("org.portable-scala"          % "sbt-scalajs-crossproject" % "1.3.2
 addSbtPlugin("org.scalablytyped.converter" % "sbt-converter"            % "1.0.0-beta39")
 
 // sane scalac options
-addSbtPlugin("org.typelevel" % "sbt-tpolecat" % "0.5.0")
+addSbtPlugin("org.typelevel" % "sbt-tpolecat" % "0.5.1")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "1.0.2")
 
