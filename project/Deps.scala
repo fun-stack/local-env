@@ -7,9 +7,9 @@ object Deps {
   val scalatest = s("org.scalatest" %%% "scalatest" % "3.2.18")
 
   val cats = new {
-    val core   = s("org.typelevel" %%% "cats-core" % "2.10.0")
+    val core   = s("org.typelevel" %%% "cats-core" % "2.12.0")
     val effect = s("org.typelevel" %%% "cats-effect" % "3.5.4")
-    val alley  = s("org.typelevel" %%% "alleycats-core" % "2.10.0")
+    val alley  = s("org.typelevel" %%% "alleycats-core" % "2.12.0")
   }
 
   val scalaJS = new {
