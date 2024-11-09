@@ -7,6 +7,6 @@ addSbtPlugin("org.scalablytyped.converter" % "sbt-converter"            % "1.0.0
 // sane scalac options
 addSbtPlugin("org.typelevel" % "sbt-tpolecat" % "0.5.2")
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "1.0.2")
+addSbtPlugin("com.github.sbt" % "sbt-git" % "2.1.0")
 
 addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.5.10")
