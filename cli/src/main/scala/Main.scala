@@ -54,31 +54,48 @@ object Main {
   }
 
   def watch(config: Config.Handler): Unit = {
-    var watcher: Option[fsMod.FSWatcher]             = None
-    var lastTimeout: Option[timers.SetTimeoutHandle] = None
+    var watcher: Option[fsMod.FSWatcher]                  = None
+    var lastTimeoutRun: Option[timers.SetTimeoutHandle]   = None
+    var lastTimeoutWatch: Option[timers.SetTimeoutHandle] = None
 
-    def run(): Unit =
+    val jsFilePath     = pathMod.parse(config.jsFileName)
+    val jsFileName     = jsFilePath.base
+    val jsParentFolder = jsFilePath.dir
+
+    def run(): Unit = {
+      lastTimeoutRun.foreach(timers.clearTimeout)
+      lastTimeoutRun = None
+
       setHandler(config) match {
         case Right(())   => ()
         case Left(error) =>
           println(s"${config.mode}> Error: $error")
           retry()
       }
+    }
 
     def watch(): Unit = {
-      lastTimeout.foreach(timers.clearTimeout)
-      lastTimeout = None
+      lastTimeoutWatch.foreach(timers.clearTimeout)
+      lastTimeoutWatch = None
 
       watcher.foreach(_.close())
       watcher = None
 
       try {
         val w: fsMod.FSWatcher = fsMod.watch(
-          filename = config.jsFileName,
-          listener = { (_, _) =>
-            println(s"${config.mode}> File changed, resetting...")
-            run()
-            watch() // since the file might have been deleted, reinitialize the watcher
+          filename = jsParentFolder,
+          listener = { (event, filename) =>
+            println(s"${config.mode}> File watcher triggered. Event: ${event}, Filename: ${filename}")
+            val parsedFilePath = pathMod.parse(filename)
+            val parsedFilename = parsedFilePath.base
+            if (parsedFilename == jsFileName) {
+              println(s"${config.mode}> File changed, resetting...")
+              lastTimeoutRun.foreach(timers.clearTimeout)
+              lastTimeoutRun = Some(timers.setTimeout(1000) {
+                run()
+                watch() // since the file might have been deleted, reinitialize the watcher
+              })
+            }
           },
         )
 
@@ -100,8 +117,8 @@ object Main {
 
     def retry(msg: String = ""): Unit = {
       println(s"${if (msg.nonEmpty) s"$msg " else ""}Retrying...")
-      lastTimeout.foreach(timers.clearTimeout)
-      lastTimeout = Some(timers.setTimeout(2000)(watch()))
+      lastTimeoutWatch.foreach(timers.clearTimeout)
+      lastTimeoutWatch = Some(timers.setTimeout(2000)(watch()))
     }
 
     watch()
@@ -142,7 +159,7 @@ object Main {
         Either
           .catchNonFatal(requireUncached(pathMod.resolve(config.jsFileName)))
           .left
-          .map(exception => s"Error when requiring js file: ${exception}")
+          .map(exception => s"Error when requiring js file: $exception")
       exportedHandler <-
         requiredJs
           .selectDynamic(config.exportName)
@@ -167,11 +184,11 @@ object Main {
     Either.catchNonFatal(function(a, b)) match {
       case Right(r) =>
         r.`catch`[R]({ (error: Any) =>
-          println(s"${mode}> Error in function promise: $error")
+          println(s"$mode> Error in function promise: $error")
           js.Promise.reject(error)
         }: js.Function1[Any, js.Thenable[R]])
       case Left(e)  =>
-        println(s"${mode}> Error in function: $e")
+        println(s"$mode> Error in function: $e")
         throw e
     }
   }
