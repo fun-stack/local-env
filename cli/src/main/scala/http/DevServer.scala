@@ -210,7 +210,7 @@ object DevServer {
       ),
       isBase64Encoded = false,
       body = body,
-      pathParameters = js.undefined,                         // TODO: js.Dictionary for /{id}/ in URL
+      pathParameters = js.undefined, // TODO: js.Dictionary for /{id}/ in URL
       queryStringParameters = queryParameters.toJSDictionary, // js.Dictionary[String](),
     )
 
